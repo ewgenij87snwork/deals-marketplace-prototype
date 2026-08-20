@@ -1,0 +1,162 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  engineType   = "client"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  BUYER
+  SELLER
+  PLATFORM_MANAGER
+}
+
+enum ParticipantStatus {
+  ACTIVE
+  SUSPENDED
+  REMOVED
+}
+
+enum AssetCategory {
+  BANK
+  FINTECH
+  PAYMENT
+  EMI
+  CRYPTO
+}
+
+enum BusinessStatus {
+  ACTIVE
+  LICENSE_ONLY
+  PRE_REVENUE
+  DORMANT
+  PROFITABLE
+}
+
+enum ModerationActionType {
+  SUSPEND
+  RESTORE
+  REMOVE
+}
+
+model DemoWorkspace {
+  id                String             @id @default(uuid()) @db.Uuid
+  createdAt         DateTime           @default(now())
+  expiresAt         DateTime
+  users             User[]
+  assets            Asset[]
+  contactRequests   ContactRequest[]
+  moderationActions ModerationAction[]
+
+  @@index([expiresAt])
+}
+
+model User {
+  id                         String             @id @default(uuid()) @db.Uuid
+  workspaceId                String             @db.Uuid
+  role                       UserRole
+  status                     ParticipantStatus  @default(ACTIVE)
+  name                       String             @db.VarChar(120)
+  organization               String             @db.VarChar(160)
+  email                      String             @db.VarChar(254)
+  normalizedEmail            String             @db.VarChar(254)
+  countryCode                String             @db.VarChar(2)
+  profileSummary             String             @default("") @db.VarChar(1200)
+  createdAt                  DateTime           @default(now())
+  updatedAt                  DateTime           @updatedAt
+  workspace                  DemoWorkspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  buyerProfile               BuyerProfile?
+  assets                     Asset[]
+  sentContacts               ContactRequest[]   @relation("ContactSender")
+  receivedContacts           ContactRequest[]   @relation("ContactRecipient")
+  performedModerationActions ModerationAction[] @relation("ModerationManager")
+  receivedModerationActions  ModerationAction[] @relation("ModerationTarget")
+
+  @@unique([workspaceId, normalizedEmail])
+  @@index([workspaceId, role, status, organization])
+}
+
+model BuyerProfile {
+  userId                 String           @id @db.Uuid
+  investmentThesis       String           @db.VarChar(2000)
+  budgetMinEur           Int
+  budgetMaxEur           Int
+  targetCountries        String[]         @default([])
+  targetCategories       AssetCategory[]  @default([])
+  targetLicenseTypes     String[]         @default([])
+  targetBusinessStatuses BusinessStatus[] @default([])
+  minEmployees           Int?
+  maxEmployees           Int?
+  updatedAt              DateTime         @updatedAt
+  user                   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Asset {
+  id              String         @id @default(uuid()) @db.Uuid
+  workspaceId     String         @db.Uuid
+  sellerId        String         @db.Uuid
+  title           String         @db.VarChar(160)
+  normalizedTitle String         @db.VarChar(160)
+  summary         String         @db.VarChar(320)
+  description     String         @db.VarChar(5000)
+  category        AssetCategory
+  countryCode     String         @db.VarChar(2)
+  licenseType     String?        @db.VarChar(120)
+  regulator       String?        @db.VarChar(120)
+  businessStatus  BusinessStatus
+  askingPriceEur  Int
+  employeeCount   Int?
+  highlights      String[]       @default([])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  workspace       DemoWorkspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  seller          User           @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  contactRequests ContactRequest[]
+
+  @@unique([workspaceId, sellerId, normalizedTitle])
+  @@index([workspaceId, category, countryCode, businessStatus, askingPriceEur, createdAt])
+  @@index([workspaceId, sellerId, updatedAt])
+}
+
+model ContactRequest {
+  id             String        @id @default(uuid()) @db.Uuid
+  workspaceId    String        @db.Uuid
+  senderId       String        @db.Uuid
+  recipientId    String        @db.Uuid
+  assetId        String?       @db.Uuid
+  subject        String        @db.VarChar(160)
+  message        String        @db.VarChar(2000)
+  idempotencyKey String        @db.VarChar(120)
+  createdAt      DateTime      @default(now())
+  workspace      DemoWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sender         User          @relation("ContactSender", fields: [senderId], references: [id], onDelete: Restrict)
+  recipient      User          @relation("ContactRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
+  asset          Asset?        @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, senderId, idempotencyKey])
+  @@index([workspaceId, senderId, createdAt])
+  @@index([workspaceId, recipientId, createdAt])
+}
+
+model ModerationAction {
+  id             String                 @id @default(uuid()) @db.Uuid
+  workspaceId    String                 @db.Uuid
+  managerId      String                 @db.Uuid
+  targetUserId   String                 @db.Uuid
+  action         ModerationActionType
+  reason         String                 @db.VarChar(500)
+  previousStatus ParticipantStatus
+  nextStatus     ParticipantStatus
+  affectedAssets Int                    @default(0)
+  createdAt      DateTime               @default(now())
+  workspace      DemoWorkspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  manager        User                   @relation("ModerationManager", fields: [managerId], references: [id], onDelete: Restrict)
+  targetUser     User                   @relation("ModerationTarget", fields: [targetUserId], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, targetUserId, createdAt])
+}

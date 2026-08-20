@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+.env
+.env.*
+!.env.example
+src/generated/prisma/
+*.log
+.DS_Store
+.vercel/
+.worktrees/
+/shared
+*.tsbuildinfo
