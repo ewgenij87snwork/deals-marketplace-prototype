@@ -21,6 +21,11 @@ test('Buyer mandate persists and URL filters Assets', async ({ page }) => {
     .fill('Acquire a regulated EMI in Lithuania with an operating team and clear licence scope.');
   await page.locator('input[name="budgetMinEur"]').fill('500000');
   await page.locator('input[name="budgetMaxEur"]').fill('1500000');
+  const targetCriteria = page.locator('details').filter({
+    has: page.getByText('Target criteria', { exact: true }),
+  });
+  await targetCriteria.locator('summary').click();
+  await expect(targetCriteria).toHaveAttribute('open', '');
   await page.locator('input[name="targetCountries"]').fill('LT');
   await page.locator('input[name="targetCategories"]').fill('EMI');
   await page.locator('input[name="targetLicenseTypes"]').fill('EMI');

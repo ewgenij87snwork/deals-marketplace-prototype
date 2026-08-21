@@ -14,6 +14,11 @@ test('Seller publishes an Asset and uses it for Buyer matching and contact', asy
   await page.locator('input[name="countryCode"]').fill('LT');
   await page.locator('input[name="askingPriceEur"]').fill('1250000');
   await page.locator('select[name="businessStatus"]').selectOption('ACTIVE');
+  const regulatoryDetails = page.locator('details').filter({
+    has: page.getByText('Regulatory & team details', { exact: true }),
+  });
+  await regulatoryDetails.locator('summary').click();
+  await expect(regulatoryDetails).toHaveAttribute('open', '');
   await page.locator('input[name="licenseType"]').fill('EMI');
   await page.locator('input[name="regulator"]').fill('Bank of Lithuania');
   await page.locator('input[name="employeeCount"]').fill('12');

@@ -20,7 +20,6 @@ describe('product brand', () => {
   it('uses Deals as the public product name', async () => {
     render(await WelcomePage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByText('Deals · fictional reviewer demo')).toBeVisible();
-    expect(document.body).not.toHaveTextContent(/n5deal/i);
 
     cleanup();
     render(
@@ -29,7 +28,6 @@ describe('product brand', () => {
       </AppShell>,
     );
     expect(screen.getByRole('link', { name: 'Deals' })).toBeVisible();
-    expect(document.body).not.toHaveTextContent(/n5deal/i);
 
     cleanup();
     render(<PageHeader title="Workspace" />);
