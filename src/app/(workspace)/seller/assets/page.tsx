@@ -10,14 +10,18 @@ export default async function SellerAssetsPage() {
       <PageHeader title="My Assets" eyebrow="Seller / inventory" />
       <div className="card-grid">
         {assets.map((asset) => (
-          <article className="market-card" key={asset.id}>
+          <Link
+            className="market-card interactive-market-card"
+            href={`/assets/${asset.id}`}
+            key={asset.id}
+          >
             <span className="tag">{asset.category}</span>
             <h2>{asset.title}</h2>
             <p>
               {asset.countryCode} · {asset.businessStatus}
             </p>
             <strong>€{asset.askingPriceEur.toLocaleString()}</strong>
-          </article>
+          </Link>
         ))}
       </div>
       {assets.length === 0 && (

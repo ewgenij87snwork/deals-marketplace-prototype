@@ -47,7 +47,11 @@ export default async function BuyerAssetsPage({
       <MarketplaceFilters suggestions={suggestions} />
       <div className="card-grid">
         {data.assets.map((asset) => (
-          <article className="market-card" key={asset.id}>
+          <Link
+            className="market-card interactive-market-card"
+            href={`/assets/${asset.id}`}
+            key={asset.id}
+          >
             <div className="card-top">
               <span className="tag">{asset.category}</span>
               <span className="price">€{asset.askingPriceEur.toLocaleString()}</span>
@@ -68,10 +72,8 @@ export default async function BuyerAssetsPage({
                 <span>{asset.match.reasons[0]?.label}</span>
               </div>
             )}
-            <Link className="text-link" href={`/assets/${asset.id}`}>
-              Inspect opportunity →
-            </Link>
-          </article>
+            <span className="text-link">Inspect opportunity →</span>
+          </Link>
         ))}
       </div>
       {data.assets.length === 0 && data.inventoryTotal === 0 && (

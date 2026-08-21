@@ -73,11 +73,17 @@ function mergeFieldErrors(
   };
 }
 
-function Feedback({ state }: { state: FeedbackState | null }) {
+function Feedback({
+  state,
+  successMessage = 'Saved successfully.',
+}: {
+  state: FeedbackState | null;
+  successMessage?: string;
+}) {
   if (!state) return null;
   return (
     <p className={state.ok ? 'notice success' : 'notice error'} role="status">
-      {state.ok ? 'Saved successfully.' : state.message}
+      {state.ok ? successMessage : state.message}
     </p>
   );
 }
@@ -1033,6 +1039,10 @@ export function ContactForm({
       }}
     >
       <p className="form-note">Both fields are required.</p>
+      <p className="form-note">
+        This sends an in-platform inquiry to the Buyer; no email is sent. Both sides can find it
+        later under Inquiries.
+      </p>
       <label>
         <span className="field-label-row">
           <span className="field-label">
@@ -1094,7 +1104,7 @@ export function ContactForm({
         />
         <FieldError field="message" state={state} />
       </label>
-      <Feedback state={state} />
+      <Feedback state={state} successMessage="Inquiry sent successfully." />
       <button aria-busy={pending} className="button primary" disabled={pending || !canSend}>
         {pending && <span aria-hidden="true" className="button-spinner" />}
         {pending ? 'Sending…' : 'Send inquiry'}

@@ -76,7 +76,7 @@ function BuyerMatchCard({
 
   return (
     <article
-      className={`market-card${isOpen ? ' is-contact-open' : ''}`}
+      className={`market-card interactive-market-card${isOpen ? ' is-contact-open' : ''}`}
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
       ref={cardRef}

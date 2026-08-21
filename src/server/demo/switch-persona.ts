@@ -22,11 +22,30 @@ async function findPersona(workspaceId: string, role: UserRole) {
   });
 }
 
+async function findLatestContactRecipient(workspaceId: string, senderId: string, role: UserRole) {
+  const contact = await prisma.contactRequest.findFirst({
+    where: {
+      workspaceId,
+      senderId,
+      recipient: { role, status: 'ACTIVE' },
+    },
+    orderBy: { createdAt: 'desc' },
+    select: { recipient: { select: { id: true } } },
+  });
+  return contact?.recipient ?? null;
+}
+
 export async function switchPersona(role: UserRole): Promise<void> {
   const current = (await cookies()).get(COOKIE)?.value;
   const parsed = current ? parseSessionToken(current) : null;
   let workspaceId = parsed?.workspaceId;
-  let persona = workspaceId ? await findPersona(workspaceId, role) : null;
+  let persona =
+    workspaceId && parsed?.activeUserId
+      ? ((await findLatestContactRecipient(workspaceId, parsed.activeUserId, role)) ??
+        (await findPersona(workspaceId, role)))
+      : workspaceId
+        ? await findPersona(workspaceId, role)
+        : null;
 
   if (!workspaceId || !persona) {
     workspaceId = (await provisionDemoWorkspace()).workspaceId;

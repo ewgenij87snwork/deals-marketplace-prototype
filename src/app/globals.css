@@ -328,18 +328,38 @@ p {
 .matching-card-grid {
   align-items: start;
 }
-.matching-card-grid .market-card {
-  animation: card-enter 0.45s ease both;
-  will-change: transform;
+.interactive-market-card {
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: none;
   transition:
     transform 0.18s ease,
     box-shadow 0.18s ease,
     border-color 0.18s ease;
 }
-.matching-card-grid .market-card:hover {
+.interactive-market-card:hover {
   transform: translateY(-6px);
   border-color: #b8cbea;
   box-shadow: 0 18px 34px rgb(15 27 45 / 14%);
+}
+.interactive-market-card:focus-visible {
+  border-color: var(--primary);
+  outline: 3px solid rgb(79 137 244 / 38%);
+  outline-offset: 3px;
+}
+.matching-card-grid .market-card {
+  animation: card-enter 0.45s ease both;
+  will-change: transform;
+}
+.matching-card-grid .market-card input,
+.matching-card-grid .market-card textarea {
+  cursor: text;
+}
+.matching-card-grid .market-card select,
+.matching-card-grid .market-card button,
+.matching-card-grid .market-card label,
+.matching-card-grid .market-card .buyer-contact-disclosure {
+  cursor: pointer;
 }
 .matching-card-grid .market-card:nth-child(2) {
   animation-delay: 0.04s;
