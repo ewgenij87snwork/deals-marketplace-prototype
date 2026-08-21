@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MarketplaceFilters } from './marketplace-filters';
@@ -68,6 +68,18 @@ describe('MarketplaceFilters', () => {
     expect(screen.getByRole('combobox', { name: 'Category' })).toHaveValue('EMI');
   });
 
+  it("does not overwrite the user's first edit with the initial URL sync", () => {
+    vi.useFakeTimers();
+    render(<MarketplaceFilters />);
+    const category = screen.getByRole('combobox', { name: 'Category' });
+
+    fireEvent.change(category, { target: { value: 'EMI' } });
+    expect(category).toHaveValue('EMI');
+
+    act(() => vi.runOnlyPendingTimers());
+    expect(category).toHaveValue('EMI');
+  });
+
   it('explains and keeps an inverted price range out of URL navigation', async () => {
     const user = userEvent.setup();
     render(<MarketplaceFilters />);
@@ -87,6 +99,7 @@ describe('MarketplaceFilters', () => {
   afterEach(() => {
     window.history.replaceState({}, '', '/');
     cleanup();
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 

@@ -151,11 +151,14 @@ function MarketplaceFiltersState({
   const [mobile, setMobile] = useState(false);
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState<FilterValues>(initialValues);
+  const previousInitialValues = useRef(initialValues);
 
   const update = (field: keyof FilterValues, value: string) =>
     setValues((current) => ({ ...current, [field]: value }));
 
   useEffect(() => {
+    if (previousInitialValues.current === initialValues) return;
+    previousInitialValues.current = initialValues;
     const timer = window.setTimeout(() => setValues({ ...initialValues }), 0);
     return () => window.clearTimeout(timer);
   }, [initialValues]);
