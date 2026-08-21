@@ -83,12 +83,14 @@ describe('ModerationForm', () => {
     const user = userEvent.setup();
     render(<ModerationForm action="SUSPEND" targetUserId="seller-id" />);
 
-    await user.click(screen.getByRole('button', { name: 'Review Suspend' }));
+    const review = screen.getByRole('button', { name: 'Review Suspend' });
+    await user.click(review);
     expect(await screen.findByRole('dialog', { name: 'Suspend participant' })).toBeVisible();
 
     await user.keyboard('{Escape}');
 
     expect(screen.queryByRole('dialog', { name: 'Suspend participant' })).not.toBeInTheDocument();
+    expect(review).toHaveFocus();
   });
 
   it('requires a fresh review when the confirmed preview is stale', async () => {

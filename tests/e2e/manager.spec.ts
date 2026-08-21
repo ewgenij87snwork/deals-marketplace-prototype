@@ -19,10 +19,18 @@ test('Manager filters, previews suspension consequence, and restores the Seller'
   await expect(firstSeller).toContainText('SELLER');
   await expect(firstSeller.getByRole('button', { name: 'Review Remove' })).toBeVisible();
 
-  await firstSeller.getByRole('button', { name: 'Review Suspend' }).click();
+  const reviewSuspend = firstSeller.getByRole('button', { name: 'Review Suspend' });
+  await reviewSuspend.focus();
+  await page.keyboard.press('Enter');
   const suspendDialog = page.getByRole('dialog', { name: 'Suspend participant' });
   await expect(suspendDialog).toBeVisible();
   await expect(suspendDialog).toContainText('Assets will be hidden from Buyers');
+  await page.keyboard.press('Escape');
+  await expect(suspendDialog).toBeHidden();
+  await expect(reviewSuspend).toBeFocused();
+
+  await page.keyboard.press('Enter');
+  await expect(suspendDialog).toBeVisible();
   await suspendDialog.getByRole('button', { name: 'Confirm Suspend' }).click();
   await expect(firstSeller).toContainText('SUSPENDED');
 

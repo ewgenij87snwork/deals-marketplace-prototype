@@ -409,6 +409,7 @@ export function ModerationForm({
   action: 'SUSPEND' | 'RESTORE' | 'REMOVE';
 }) {
   const router = useRouter();
+  const reviewButton = useRef<HTMLButtonElement>(null);
   const [state, setState] = useState<FeedbackState | null>(null);
   const [pending, setPending] = useState(false);
   const [previewPending, setPreviewPending] = useState(false);
@@ -479,14 +480,27 @@ export function ModerationForm({
       }}
       open={open}
     >
-      <button className="button small" disabled={previewPending} onClick={review} type="button">
+      <button
+        className="button small"
+        disabled={previewPending}
+        onClick={review}
+        ref={reviewButton}
+        type="button"
+      >
         {previewPending ? 'Reviewing…' : `Review ${label}`}
       </button>
       {!open && <Feedback state={state} />}
       {preview && (
         <Dialog.Portal>
           <Dialog.Overlay className="dialog-overlay" />
-          <Dialog.Content aria-label={`${label} participant`} className="moderation-dialog">
+          <Dialog.Content
+            aria-label={`${label} participant`}
+            className="moderation-dialog"
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              reviewButton.current?.focus();
+            }}
+          >
             <p className="eyebrow">Impact preview</p>
             <Dialog.Title>{label} participant</Dialog.Title>
             <Dialog.Description>{impact}</Dialog.Description>
