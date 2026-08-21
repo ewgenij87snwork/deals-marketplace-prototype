@@ -369,6 +369,15 @@ p {
 .match span {
   color: #356b55;
 }
+.match-reasons {
+  display: grid;
+  gap: 2px;
+  margin: 3px 0 0;
+  padding-left: 16px;
+  color: #356b55;
+  font-size: 12px;
+  line-height: 1.35;
+}
 .text-link {
   margin-top: auto;
   padding-top: 10px;

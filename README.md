@@ -45,6 +45,16 @@ See [`docs/architecture.md`](docs/architecture.md).
 
 These features remain useful without an external AI provider. AI development tools and human judgment are documented in [`docs/ai-usage.md`](docs/ai-usage.md).
 
+### How the demo data and match score work
+
+The public demo provisions an isolated fictional workspace with seeded Buyers, Sellers,
+Assets, and Buyer mandates. The score is calculated from the selected Asset and the
+Buyer's persisted criteria: budget (30%), country (20%), category (20%), business status
+(10%), licence (15%), and team size (5%). A score of 0% means none of the configured
+criteria matched; it is a valid explainable outcome, not a loading or database error.
+The UI also shows the underlying match reasons. This prototype does not call an external
+LLM at runtime, so the result is reproducible and safe to explain to a reviewer.
+
 ## Local launch
 
 ```bash

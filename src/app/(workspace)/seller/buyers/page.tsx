@@ -84,7 +84,10 @@ export default async function SellerBuyersPage({
         </datalist>
       </UrlFilterForm>
       {data.selectedAsset && (
-        <p className="notice success">Matching Buyers against {data.selectedAsset.title}.</p>
+        <p className="notice success">
+          Matching Buyers against <strong>{data.selectedAsset.title}</strong>. Scores use budget,
+          geography, category, status, licence, and team-size criteria from each Buyer profile.
+        </p>
       )}
       <div className="card-grid matching-card-grid">
         {data.buyers.map((buyer) => (
@@ -101,9 +104,14 @@ export default async function SellerBuyersPage({
                   </span>
                 </strong>
                 <span>{buyer.match.reasons[0]?.label}</span>
+                <ul className="match-reasons" aria-label="Match details">
+                  {buyer.match.reasons.slice(0, 3).map((reason) => (
+                    <li key={reason.dimension}>{reason.label}</li>
+                  ))}
+                </ul>
               </div>
             )}
-            <details name="buyer-contact">
+            <details>
               <summary>Contact Buyer</summary>
               <ContactForm recipientId={buyer.id} assetId={data.selectedAsset?.id} />
             </details>
