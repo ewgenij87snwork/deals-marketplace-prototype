@@ -56,3 +56,40 @@ export async function cleanupWorkspace(page: Page) {
     await page.context().clearCookies();
   }
 }
+
+export async function deleteWorkspaceAssets(page: Page) {
+  const cookie = (await page.context().cookies()).find(({ name }) => name === 'n5deal_demo');
+  const [encodedPayload, encodedSignature] = cookie?.value.split('.') ?? [];
+  if (!encodedPayload || !encodedSignature)
+    throw new Error('An isolated demo session is required.');
+
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret) throw new Error('SESSION_SECRET is required for isolated E2E setup.');
+  const actualSignature = Buffer.from(encodedSignature, 'base64url');
+  const expectedSignature = createHmac('sha256', sessionSecret).update(encodedPayload).digest();
+  if (
+    actualSignature.length !== expectedSignature.length ||
+    !timingSafeEqual(actualSignature, expectedSignature)
+  )
+    throw new Error('The isolated demo session signature is invalid.');
+
+  const payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf8')) as {
+    workspaceId?: unknown;
+  };
+  if (
+    typeof payload.workspaceId !== 'string' ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      payload.workspaceId,
+    )
+  )
+    throw new Error('The isolated demo workspace identifier is invalid.');
+
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) throw new Error('DATABASE_URL is required for isolated E2E setup.');
+  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  try {
+    await prisma.asset.deleteMany({ where: { workspaceId: payload.workspaceId } });
+  } finally {
+    await prisma.$disconnect();
+  }
+}

@@ -1,11 +1,9 @@
 import { AppShell } from '@/components/app-shell';
 import { BuyerProfileForm } from '@/components/marketplace-forms';
-import { requirePrincipal } from '@/server/session/signed-session';
+import { requirePageAccess } from '@/server/policy/page-access';
 import { getBuyerProfile } from '@/server/queries/marketplace';
-import { requireRole } from '@/server/policy/authorization';
 export default async function BuyerProfilePage() {
-  const principal = await requirePrincipal();
-  requireRole(principal, 'BUYER');
+  const principal = await requirePageAccess('BUYER');
   const user = await getBuyerProfile(principal);
   return (
     <AppShell principal={principal} title="Your acquisition mandate" eyebrow="Buyer / profile">

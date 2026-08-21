@@ -20,6 +20,7 @@ import {
   createContactAction,
   moderateParticipantAction,
   previewModerationAction,
+  publishAssetAction,
 } from '@/server/actions/marketplace';
 import { prisma } from '@/server/db/prisma';
 
@@ -289,5 +290,94 @@ describe('marketplace action concurrency', () => {
         where: { workspaceId: fixture!.workspaceId, targetUserId: fixture!.seller.userId },
       }),
     ).resolves.toBe(0);
+  });
+
+  it('classifies every concurrent duplicate Asset publication with the product error', async () => {
+    mocks.principal = fixture!.seller;
+    const input = {
+      title: 'Concurrent duplicate publication',
+      summary: 'A fictional Asset used to verify the duplicate publication product contract.',
+      description:
+        'This fictional Asset is submitted concurrently so every losing request must receive the stable duplicate-title error.',
+      category: 'PAYMENT',
+      countryCode: 'GB',
+      licenseType: 'PI',
+      regulator: 'Fictional regulator',
+      businessStatus: 'ACTIVE',
+      askingPriceEur: 800_000,
+      employeeCount: 8,
+      highlights: ['Fictional', 'Concurrent'],
+    };
+
+    const results = await Promise.all(Array.from({ length: 8 }, () => publishAssetAction(input)));
+
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
+    expect(results.filter((result) => !result.ok)).toHaveLength(7);
+    expect(
+      results
+        .filter((result) => !result.ok)
+        .every((result) => !result.ok && result.code === 'DUPLICATE_ASSET_TITLE'),
+    ).toBe(true);
+    await expect(
+      prisma.asset.count({
+        where: {
+          workspaceId: fixture!.workspaceId,
+          sellerId: fixture!.seller.userId,
+          normalizedTitle: 'concurrent duplicate publication',
+        },
+      }),
+    ).resolves.toBe(1);
+  });
+
+  it('rejects cross-workspace contact and moderation identifiers without side effects', async () => {
+    const foreign = await createFixture();
+    try {
+      mocks.principal = fixture!.manager;
+      await expect(
+        previewModerationAction({
+          targetUserId: foreign.seller.userId,
+          action: 'SUSPEND',
+        }),
+      ).resolves.toMatchObject({ ok: false, code: 'RESOURCE_NOT_FOUND' });
+      await expect(
+        moderateParticipantAction({
+          targetUserId: foreign.seller.userId,
+          action: 'SUSPEND',
+          reason: 'A forged cross-workspace moderation attempt.',
+          expectedStatus: 'ACTIVE',
+          expectedAffectedAssets: 1,
+        }),
+      ).resolves.toMatchObject({ ok: false, code: 'RESOURCE_NOT_FOUND' });
+
+      mocks.principal = fixture!.buyer;
+      await expect(
+        createContactAction({
+          recipientId: foreign.seller.userId,
+          assetId: foreign.assetId,
+          subject: 'Forged cross-workspace inquiry',
+          message: 'This request must not cross the isolated workspace boundary.',
+          idempotencyKey: crypto.randomUUID(),
+        }),
+      ).resolves.toMatchObject({ ok: false, code: 'CONTACT_TARGET_UNAVAILABLE' });
+
+      await expect(
+        prisma.user.findUnique({
+          where: { id: foreign.seller.userId },
+          select: { status: true },
+        }),
+      ).resolves.toMatchObject({ status: 'ACTIVE' });
+      await expect(
+        prisma.moderationAction.count({ where: { targetUserId: foreign.seller.userId } }),
+      ).resolves.toBe(0);
+      await expect(
+        prisma.contactRequest.count({
+          where: {
+            OR: [{ senderId: fixture!.buyer.userId }, { recipientId: foreign.seller.userId }],
+          },
+        }),
+      ).resolves.toBe(0);
+    } finally {
+      await prisma.demoWorkspace.deleteMany({ where: { id: foreign.workspaceId } });
+    }
   });
 });

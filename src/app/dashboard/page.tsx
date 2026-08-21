@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AppShell } from '@/components/app-shell';
-import { requirePrincipal } from '@/server/session/signed-session';
+import { requirePageAccess } from '@/server/policy/page-access';
 import {
   listAssets,
   listContacts,
@@ -9,20 +9,30 @@ import {
   listOwnAssets,
 } from '@/server/queries/marketplace';
 
-export default async function DashboardPage() {
-  const principal = await requirePrincipal();
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const principal = await requirePageAccess();
+  const roleNotice = (await searchParams).notice === 'role';
   const primaryCount =
     principal.role === 'BUYER'
       ? (await listAssets(principal)).total
       : principal.role === 'SELLER'
         ? (await listOwnAssets(principal)).length
-        : (await listParticipants(principal)).length;
+        : (await listParticipants(principal)).total;
   const secondaryCount =
     principal.role === 'PLATFORM_MANAGER'
-      ? (await listManagerAssets(principal)).length
+      ? (await listManagerAssets(principal)).total
       : (await listContacts(principal)).length;
   return (
     <AppShell principal={principal} title="Your marketplace desk" eyebrow="Workspace overview">
+      {roleNotice && (
+        <p className="notice error" role="status">
+          That page is not available for the active persona.
+        </p>
+      )}
       <p className="lead">
         A focused view of the next useful action for your role. All demo records are fictional and
         scoped to this browser workspace.

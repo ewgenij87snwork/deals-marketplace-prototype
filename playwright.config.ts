@@ -13,7 +13,7 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: 'pnpm exec next dev --port 3102',
+        command: 'node ./node_modules/next/dist/bin/next dev --port 3102',
         url: 'http://localhost:3102/api/health',
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,

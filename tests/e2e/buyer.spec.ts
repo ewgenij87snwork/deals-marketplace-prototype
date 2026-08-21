@@ -1,7 +1,15 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { choosePersona, cleanupWorkspace } from './helpers';
 
 test.afterEach(async ({ page }) => cleanupWorkspace(page));
+
+async function marketplaceFilterScope(page: Page) {
+  if ((page.viewportSize()?.width ?? 1280) > 600) return page;
+  await page.getByRole('button', { name: 'Filters' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Marketplace filters' });
+  await expect(sheet).toBeVisible();
+  return sheet;
+}
 
 test('Buyer mandate persists and URL filters Assets', async ({ page }) => {
   await choosePersona(page, 'Buyer');
@@ -27,10 +35,11 @@ test('Buyer mandate persists and URL filters Assets', async ({ page }) => {
 
   await page.getByRole('link', { name: 'Marketplace', exact: true }).click();
   await expect(page).toHaveURL(/\/buyer\/assets$/);
-  await page.locator('select[name="category"]').selectOption('EMI');
-  await page.locator('input[name="country"]').fill('LT');
-  await page.locator('select[name="businessStatus"]').selectOption('LICENSE_ONLY');
-  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  const filters = await marketplaceFilterScope(page);
+  await filters.locator('select[name="category"]').selectOption('EMI');
+  await filters.locator('input[name="country"]').fill('LT');
+  await filters.locator('select[name="businessStatus"]').selectOption('LICENSE_ONLY');
+  await filters.getByRole('button', { name: 'Search', exact: true }).click();
 
   await expect(page).toHaveURL(/category=EMI/);
   await expect(page).toHaveURL(/country=LT/);
@@ -75,6 +84,88 @@ test('Buyer rejects malformed marketplace filters instead of reflecting them', a
   await page.goto(`/buyer/assets?q=${'x'.repeat(121)}&country=INVALID`);
 
   await expect(page).toHaveURL(/\/buyer\/assets$/);
-  await expect(page.locator('input[name="q"]')).toHaveValue('');
-  await expect(page.locator('input[name="country"]')).toHaveValue('');
+  const filters = await marketplaceFilterScope(page);
+  await expect(filters.locator('input[name="q"]')).toHaveValue('');
+  await expect(filters.locator('input[name="country"]')).toHaveValue('');
+});
+
+test('Buyer filter controls follow browser Back together with URL and results', async ({
+  page,
+}) => {
+  await choosePersona(page, 'Buyer');
+  await page.getByRole('link', { name: 'Marketplace', exact: true }).click();
+  const appliedFilters = await marketplaceFilterScope(page);
+  await appliedFilters.locator('select[name="category"]').selectOption('EMI');
+  await appliedFilters.locator('input[name="country"]').fill('LT');
+  await appliedFilters.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(page.locator('article.market-card')).toHaveCount(1);
+
+  await page.goBack();
+
+  await expect(page).toHaveURL(/\/buyer\/assets$/);
+  const restoredFilters = await marketplaceFilterScope(page);
+  await expect(restoredFilters.locator('select[name="category"]')).toHaveValue('');
+  await expect(restoredFilters.locator('input[name="country"]')).toHaveValue('');
+  await expect(page.locator('article.market-card')).toHaveCount(4);
+});
+
+test('Buyer price bounds constrain the Asset result set', async ({ page }) => {
+  await choosePersona(page, 'Buyer');
+
+  await page.goto('/buyer/assets?priceMin=3000000');
+
+  await expect(page.locator('article.market-card')).toHaveCount(1);
+  await expect(page.getByText('Irish RegTech Platform', { exact: true })).toBeVisible();
+  const filters = await marketplaceFilterScope(page);
+  await expect(filters.locator('input[name="priceMin"]')).toHaveValue('3000000');
+});
+
+test('Buyer text search includes the full Asset description promised by the UI', async ({
+  page,
+}) => {
+  await choosePersona(page, 'Buyer');
+
+  await page.goto('/buyer/assets?q=due-diligence-ready');
+
+  await expect(page.locator('article.market-card')).toHaveCount(1);
+  await expect(page.getByText('UK Payment Institution', { exact: true })).toBeVisible();
+});
+
+test('Buyer marketplace keeps two useful columns at tablet width', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await choosePersona(page, 'Buyer');
+  await page.getByRole('link', { name: 'Marketplace', exact: true }).click();
+
+  const cards = page.locator('article.market-card');
+  await expect(cards).toHaveCount(4);
+  const boxes = await Promise.all([0, 1, 2].map((index) => cards.nth(index).boundingBox()));
+  expect(boxes.every(Boolean)).toBe(true);
+  expect(Math.abs(boxes[0]!.y - boxes[1]!.y)).toBeLessThan(2);
+  expect(boxes[2]!.y).toBeGreaterThan(boxes[0]!.y + boxes[0]!.height - 2);
+});
+
+test('Buyer mobile filters use a sheet and never widen the page', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Mobile-only responsive contract.');
+  await choosePersona(page, 'Buyer');
+  await page.getByRole('link', { name: 'Marketplace', exact: true }).click();
+
+  await page.getByRole('button', { name: 'Filters' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Marketplace filters' });
+  await expect(sheet).toBeVisible();
+  await expect(sheet.locator('input[name="q"]')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+});
+
+test('Buyer search treats SQL-like input as literal text', async ({ page }) => {
+  await choosePersona(page, 'Buyer');
+  const payload = `%_' OR 1=1 --`;
+
+  await page.goto(`/buyer/assets?q=${encodeURIComponent(payload)}`);
+
+  await expect(page.getByRole('heading', { name: 'Explore Assets' })).toBeVisible();
+  const filters = await marketplaceFilterScope(page);
+  await expect(filters.locator('input[name="q"]')).toHaveValue(payload);
+  await expect(page.locator('article.market-card')).toHaveCount(0);
 });

@@ -1,10 +1,9 @@
 import { AppShell } from '@/components/app-shell';
-import { requirePrincipal } from '@/server/session/signed-session';
+import Link from 'next/link';
+import { requirePageAccess } from '@/server/policy/page-access';
 import { listOwnAssets } from '@/server/queries/marketplace';
-import { requireRole } from '@/server/policy/authorization';
 export default async function SellerAssetsPage() {
-  const principal = await requirePrincipal();
-  requireRole(principal, 'SELLER');
+  const principal = await requirePageAccess('SELLER');
   const assets = await listOwnAssets(principal);
   return (
     <AppShell principal={principal} title="My Assets" eyebrow="Seller / inventory">
@@ -20,6 +19,14 @@ export default async function SellerAssetsPage() {
           </article>
         ))}
       </div>
+      {assets.length === 0 && (
+        <div className="empty">
+          <p>No Assets published yet.</p>
+          <Link className="text-link" href="/seller/publish">
+            Publish your first Asset
+          </Link>
+        </div>
+      )}
     </AppShell>
   );
 }

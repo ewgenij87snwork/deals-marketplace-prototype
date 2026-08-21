@@ -26,7 +26,9 @@ export function createSessionToken(payload: Payload): string {
 }
 
 export function parseSessionToken(token: string): Payload | null {
-  const [body, encodedSignature] = token.split('.');
+  const segments = token.split('.');
+  if (segments.length !== 2) return null;
+  const [body, encodedSignature] = segments;
   if (!body || !encodedSignature) return null;
 
   const signature = Buffer.from(encodedSignature, 'base64url');
@@ -57,6 +59,10 @@ export async function setDemoSession(workspaceId: string, activeUserId: string):
     path: '/',
     maxAge,
   });
+}
+
+export async function clearDemoSession(): Promise<void> {
+  (await cookies()).delete(COOKIE);
 }
 
 export async function requirePrincipal(): Promise<Principal> {

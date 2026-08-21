@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/server/db/prisma';
-import { requirePrincipal } from '@/server/session/signed-session';
+import { clearDemoSession, requirePrincipal } from '@/server/session/signed-session';
 import { requireRole } from '@/server/policy/authorization';
 import { AppPolicyError, toActionError } from '@/server/policy/errors';
 import {
@@ -14,8 +14,9 @@ import {
 } from '@/domain/validation';
 import type { ActionResult } from '@/domain/contracts/action-result';
 import type { ParticipantStatus } from '@/generated/prisma/enums';
+import { Prisma } from '@/generated/prisma/client';
 
-const normalize = (value: string) => value.trim().toLowerCase();
+const normalize = (value: string) => value.normalize('NFKC').trim().toLowerCase();
 function nextParticipantStatus(
   currentStatus: ParticipantStatus,
   action: 'SUSPEND' | 'RESTORE' | 'REMOVE',
@@ -71,6 +72,13 @@ export async function publishAssetAction(input: unknown): Promise<ActionResult<{
     revalidatePath('/buyer/assets');
     return { ok: true, data: { id: asset.id } };
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return {
+        ok: false,
+        code: 'DUPLICATE_ASSET_TITLE',
+        message: 'You already have an Asset with this title.',
+      };
+    }
     return toActionError(error);
   }
 }
@@ -269,6 +277,7 @@ export async function resetDemoAction(): Promise<ActionResult<{ reset: true }>> 
   try {
     const principal = await requirePrincipal();
     await prisma.demoWorkspace.delete({ where: { id: principal.workspaceId } });
+    await clearDemoSession();
     return { ok: true, data: { reset: true } };
   } catch (error) {
     return toActionError(error);

@@ -1,12 +1,10 @@
 import { notFound } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { ContactForm } from '@/components/marketplace-forms';
-import { requirePrincipal } from '@/server/session/signed-session';
+import { requirePageAccess } from '@/server/policy/page-access';
 import { getAssetDetail } from '@/server/queries/marketplace';
-import { requireRole } from '@/server/policy/authorization';
 export default async function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const principal = await requirePrincipal();
-  requireRole(principal, 'BUYER', 'SELLER', 'PLATFORM_MANAGER');
+  const principal = await requirePageAccess('BUYER', 'SELLER', 'PLATFORM_MANAGER');
   const asset = await getAssetDetail(principal, (await params).id);
   if (!asset) notFound();
   return (

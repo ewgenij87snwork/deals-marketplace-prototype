@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { ContactForm } from '@/components/marketplace-forms';
+import { UrlFilterForm } from '@/components/url-filter-form';
 import { participantQuerySchema } from '@/domain/validation';
-import { requirePrincipal } from '@/server/session/signed-session';
+import { requirePageAccess } from '@/server/policy/page-access';
 import { listBuyers, listOwnAssets } from '@/server/queries/marketplace';
-import { requireRole } from '@/server/policy/authorization';
 
 const sellerBuyerQuerySchema = participantQuerySchema.pick({ q: true, country: true });
 const optionalQueryValue = (value: string | string[] | undefined) =>
@@ -15,8 +15,7 @@ export default async function SellerBuyersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const principal = await requirePrincipal();
-  requireRole(principal, 'SELLER');
+  const principal = await requirePageAccess('SELLER');
   const params = await searchParams;
   const parsed = sellerBuyerQuerySchema.safeParse({
     q: params.q ?? '',
@@ -38,7 +37,7 @@ export default async function SellerBuyersPage({
   });
   return (
     <AppShell principal={principal} title="Find Buyers" eyebrow="Seller / matching">
-      <form className="search-bar">
+      <UrlFilterForm>
         <input name="q" defaultValue={q} placeholder="Search Buyers" />
         <select aria-label="Asset context" defaultValue={selectedAssetId ?? ''} name="asset">
           <option disabled value="">
@@ -58,7 +57,7 @@ export default async function SellerBuyersPage({
           placeholder="Buyer country"
         />
         <button className="button primary">Apply filters</button>
-      </form>
+      </UrlFilterForm>
       {data.selectedAsset && (
         <p className="notice success">Matching Buyers against {data.selectedAsset.title}.</p>
       )}

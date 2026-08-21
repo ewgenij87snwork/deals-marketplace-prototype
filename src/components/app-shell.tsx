@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { Principal } from '@/server/policy/authorization';
+import { ResetDemoButton } from '@/components/reset-demo-button';
 
 export function AppShell({
   principal,
@@ -48,6 +49,7 @@ export function AppShell({
         <Link href="/" className="switch-link">
           Switch persona
         </Link>
+        <ResetDemoButton />
       </aside>
       <main className="content">
         <div className="content-inner">

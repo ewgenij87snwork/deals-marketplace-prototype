@@ -39,44 +39,62 @@ export async function listAssets(
     category?: string;
     country?: string;
     businessStatus?: string;
+    priceMin?: number;
+    priceMax?: number;
     page?: number;
   } = {},
 ) {
   const q = params.q?.trim() ?? '';
-  const where = {
+  const inventoryWhere = {
     workspaceId: principal.workspaceId,
     seller: { status: 'ACTIVE' as const },
+  };
+  const where = {
+    ...inventoryWhere,
     ...(params.category ? { category: params.category as never } : {}),
     ...(params.country ? { countryCode: params.country.toUpperCase() } : {}),
     ...(params.businessStatus ? { businessStatus: params.businessStatus as never } : {}),
+    ...(params.priceMin !== undefined || params.priceMax !== undefined
+      ? {
+          askingPriceEur: {
+            ...(params.priceMin !== undefined ? { gte: params.priceMin } : {}),
+            ...(params.priceMax !== undefined ? { lte: params.priceMax } : {}),
+          },
+        }
+      : {}),
     ...(q
       ? {
           OR: [
             { title: { contains: q, mode: 'insensitive' as const } },
             { summary: { contains: q, mode: 'insensitive' as const } },
+            { description: { contains: q, mode: 'insensitive' as const } },
           ],
         }
       : {}),
   };
-  const total = await prisma.asset.count({ where });
-  const assets = await prisma.asset.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    skip: ((params.page ?? 1) - 1) * pageSize,
-    take: pageSize,
-    select: {
-      id: true,
-      title: true,
-      summary: true,
-      category: true,
-      countryCode: true,
-      businessStatus: true,
-      askingPriceEur: true,
-      licenseType: true,
-      employeeCount: true,
-      seller: { select: { id: true, organization: true, status: true } },
-    },
-  });
+  const page = params.page ?? 1;
+  const [total, inventoryTotal, assets] = await Promise.all([
+    prisma.asset.count({ where }),
+    prisma.asset.count({ where: inventoryWhere }),
+    prisma.asset.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      select: {
+        id: true,
+        title: true,
+        summary: true,
+        category: true,
+        countryCode: true,
+        businessStatus: true,
+        askingPriceEur: true,
+        licenseType: true,
+        employeeCount: true,
+        seller: { select: { id: true, organization: true, status: true } },
+      },
+    }),
+  ]);
   const profile =
     principal.role === 'BUYER'
       ? await prisma.buyerProfile.findUnique({
@@ -91,6 +109,8 @@ export async function listAssets(
       match: profile ? calculateMatch(profile, asset) : undefined,
     })),
     total,
+    inventoryTotal,
+    page,
     pageSize,
   };
 }
@@ -134,6 +154,7 @@ export async function listOwnAssets(principal: Principal) {
   return prisma.asset.findMany({
     where: { workspaceId: principal.workspaceId, sellerId: principal.userId },
     orderBy: { createdAt: 'desc' },
+    take: 100,
     select: {
       id: true,
       title: true,
@@ -167,6 +188,7 @@ export async function listBuyers(
         : {}),
     },
     orderBy: { organization: 'asc' },
+    take: 50,
     select: {
       id: true,
       name: true,
@@ -213,64 +235,100 @@ export async function listBuyers(
 
 export async function listParticipants(
   principal: Principal,
-  params: { q?: string; role?: 'BUYER' | 'SELLER'; status?: string; country?: string } = {},
+  params: {
+    q?: string;
+    role?: 'BUYER' | 'SELLER';
+    status?: string;
+    country?: string;
+    page?: number;
+  } = {},
 ) {
-  return prisma.user.findMany({
-    where: {
-      workspaceId: principal.workspaceId,
-      AND: [{ role: { not: 'PLATFORM_MANAGER' } }, ...(params.role ? [{ role: params.role }] : [])],
-      ...(params.status ? { status: params.status as never } : {}),
-      ...(params.country ? { countryCode: params.country.toUpperCase() } : {}),
-      ...(params.q
-        ? {
-            OR: [
-              { name: { contains: params.q, mode: 'insensitive' } },
-              { organization: { contains: params.q, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: [{ status: 'asc' }, { organization: 'asc' }],
-    select: {
-      id: true,
-      name: true,
-      organization: true,
-      role: true,
-      status: true,
-      countryCode: true,
-      profileSummary: true,
-      _count: { select: { assets: true } },
-    },
-  });
+  const where = {
+    workspaceId: principal.workspaceId,
+    AND: [
+      { role: { not: 'PLATFORM_MANAGER' as const } },
+      ...(params.role ? [{ role: params.role }] : []),
+    ],
+    ...(params.status ? { status: params.status as never } : {}),
+    ...(params.country ? { countryCode: params.country.toUpperCase() } : {}),
+    ...(params.q
+      ? {
+          OR: [
+            { name: { contains: params.q, mode: 'insensitive' as const } },
+            { organization: { contains: params.q, mode: 'insensitive' as const } },
+          ],
+        }
+      : {}),
+  };
+  const page = params.page ?? 1;
+  const [total, people] = await Promise.all([
+    prisma.user.count({ where }),
+    prisma.user.findMany({
+      where,
+      orderBy: [{ status: 'asc' }, { organization: 'asc' }, { id: 'asc' }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      select: {
+        id: true,
+        name: true,
+        organization: true,
+        role: true,
+        status: true,
+        countryCode: true,
+        profileSummary: true,
+        _count: { select: { assets: true } },
+      },
+    }),
+  ]);
+  return { people, total, page, pageSize };
 }
 
 export async function listManagerAssets(
   principal: Principal,
-  params: { q?: string; status?: string; category?: string } = {},
+  params: {
+    q?: string;
+    sellerStatus?: string;
+    category?: string;
+    country?: string;
+    page?: number;
+  } = {},
 ) {
-  return prisma.asset.findMany({
-    where: {
-      workspaceId: principal.workspaceId,
-      ...(params.category ? { category: params.category as never } : {}),
-      ...(params.q
-        ? {
-            OR: [
-              { title: { contains: params.q, mode: 'insensitive' } },
-              { seller: { organization: { contains: params.q, mode: 'insensitive' } } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      title: true,
-      category: true,
-      countryCode: true,
-      askingPriceEur: true,
-      seller: { select: { organization: true, status: true } },
-    },
-  });
+  const q = params.q?.trim() ?? '';
+  const where = {
+    workspaceId: principal.workspaceId,
+    ...(params.category ? { category: params.category as never } : {}),
+    ...(params.country ? { countryCode: params.country.toUpperCase() } : {}),
+    ...(params.sellerStatus ? { seller: { status: params.sellerStatus as never } } : {}),
+    ...(q
+      ? {
+          OR: [
+            { title: { contains: q, mode: 'insensitive' as const } },
+            { summary: { contains: q, mode: 'insensitive' as const } },
+            { description: { contains: q, mode: 'insensitive' as const } },
+            { seller: { organization: { contains: q, mode: 'insensitive' as const } } },
+          ],
+        }
+      : {}),
+  };
+  const page = params.page ?? 1;
+  const [total, assets] = await Promise.all([
+    prisma.asset.count({ where }),
+    prisma.asset.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        countryCode: true,
+        askingPriceEur: true,
+        seller: { select: { organization: true, status: true } },
+      },
+    }),
+  ]);
+  return { assets, total, page, pageSize };
 }
 
 export async function listContacts(principal: Principal) {
@@ -280,6 +338,7 @@ export async function listContacts(principal: Principal) {
       OR: [{ senderId: principal.userId }, { recipientId: principal.userId }],
     },
     orderBy: { createdAt: 'desc' },
+    take: 100,
     select: {
       id: true,
       subject: true,

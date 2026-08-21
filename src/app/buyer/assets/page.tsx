@@ -1,19 +1,11 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { MarketplaceFilters } from '@/components/marketplace-filters';
+import { Pagination } from '@/components/pagination';
 import { assetQuerySchema } from '@/domain/validation';
-import { requirePrincipal } from '@/server/session/signed-session';
+import { requirePageAccess } from '@/server/policy/page-access';
 import { listAssets } from '@/server/queries/marketplace';
-import { requireRole } from '@/server/policy/authorization';
-
-const categories = ['BANK', 'FINTECH', 'PAYMENT', 'EMI', 'CRYPTO'] as const;
-const businessStatuses = [
-  'ACTIVE',
-  'LICENSE_ONLY',
-  'PRE_REVENUE',
-  'DORMANT',
-  'PROFITABLE',
-] as const;
 
 const optionalQueryValue = (value: string | string[] | undefined) =>
   value === '' ? undefined : value;
@@ -23,8 +15,7 @@ export default async function BuyerAssetsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const principal = await requirePrincipal();
-  requireRole(principal, 'BUYER');
+  const principal = await requirePageAccess('BUYER');
   const params = await searchParams;
   const parsed = assetQuerySchema.safeParse({
     q: params.q ?? '',
@@ -36,37 +27,19 @@ export default async function BuyerAssetsPage({
     page: optionalQueryValue(params.page),
   });
   if (!parsed.success) redirect('/buyer/assets');
-  const { q, category, country, businessStatus, page } = parsed.data;
-  const data = await listAssets(principal, { q, category, country, businessStatus, page });
+  const { q, category, country, businessStatus, priceMin, priceMax, page } = parsed.data;
+  const data = await listAssets(principal, {
+    q,
+    category,
+    country,
+    businessStatus,
+    priceMin,
+    priceMax,
+    page,
+  });
   return (
     <AppShell principal={principal} title="Explore Assets" eyebrow="Buyer / marketplace">
-      <form className="search-bar">
-        <input name="q" defaultValue={q} placeholder="Search title or description" />
-        <select aria-label="Category" defaultValue={category ?? ''} name="category">
-          <option value="">All categories</option>
-          {categories.map((value) => (
-            <option key={value}>{value}</option>
-          ))}
-        </select>
-        <input
-          aria-label="Country"
-          defaultValue={country ?? ''}
-          maxLength={2}
-          name="country"
-          placeholder="Country code"
-        />
-        <select
-          aria-label="Business status"
-          defaultValue={businessStatus ?? ''}
-          name="businessStatus"
-        >
-          <option value="">All statuses</option>
-          {businessStatuses.map((value) => (
-            <option key={value}>{value}</option>
-          ))}
-        </select>
-        <button className="button primary">Search</button>
-      </form>
+      <MarketplaceFilters />
       <div className="card-grid">
         {data.assets.map((asset) => (
           <article className="market-card" key={asset.id}>
@@ -91,9 +64,21 @@ export default async function BuyerAssetsPage({
           </article>
         ))}
       </div>
-      {data.assets.length === 0 && (
-        <div className="empty">No matches. Try clearing your search.</div>
+      {data.assets.length === 0 && data.inventoryTotal === 0 && (
+        <div className="empty">No Assets are currently available in this demo workspace.</div>
       )}
+      {data.assets.length === 0 && data.inventoryTotal > 0 && (
+        <div className="empty">
+          No matches. <Link href="/buyer/assets">Clear all filters</Link>.
+        </div>
+      )}
+      <Pagination
+        page={data.page}
+        pageSize={data.pageSize}
+        params={{ q, category, country, businessStatus, priceMin, priceMax }}
+        pathname="/buyer/assets"
+        total={data.total}
+      />
     </AppShell>
   );
 }

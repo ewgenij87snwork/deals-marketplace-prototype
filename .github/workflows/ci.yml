@@ -46,7 +46,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
       - run: pnpm db:deploy
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm build
+      - run: pnpm audit --prod
+      - run: pnpm verify
+      - run: pnpm test:e2e

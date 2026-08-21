@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { choosePersona, cleanupWorkspace } from './helpers';
+import { choosePersona, cleanupWorkspace, deleteWorkspaceAssets } from './helpers';
 
 test.afterEach(async ({ page }) => cleanupWorkspace(page));
 
@@ -60,4 +60,67 @@ test('Manager cannot expose platform managers through a forged role filter', asy
 
   await expect(page).toHaveURL(/\/manager\/participants$/);
   await expect(page.locator('tbody')).not.toContainText('PLATFORM_MANAGER');
+});
+
+test('Manager searches and filters the Asset directory through canonical URL state', async ({
+  page,
+}) => {
+  await choosePersona(page, 'Platform Manager');
+
+  await page.goto('/manager/assets?q=UK&category=PAYMENT&country=GB&sellerStatus=ACTIVE');
+
+  await expect(page.locator('input[name="q"]')).toHaveValue('UK');
+  await expect(page.locator('select[name="category"]')).toHaveValue('PAYMENT');
+  await expect(page.locator('input[name="country"]')).toHaveValue('GB');
+  await expect(page.locator('select[name="sellerStatus"]')).toHaveValue('ACTIVE');
+  await expect(page.locator('tbody tr')).toHaveCount(1);
+  await expect(page.locator('tbody tr').first()).toContainText('UK Payment Institution');
+});
+
+test('Manager Asset filter controls follow browser Back with the result table', async ({
+  page,
+}) => {
+  await choosePersona(page, 'Platform Manager');
+  await page.goto('/manager/assets');
+  await page.locator('input[name="q"]').fill('UK');
+  await page.locator('select[name="category"]').selectOption('PAYMENT');
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(page.locator('tbody tr')).toHaveCount(1);
+
+  await page.goBack();
+
+  await expect(page).toHaveURL(/\/manager\/assets$/);
+  await expect(page.locator('input[name="q"]')).toHaveValue('');
+  await expect(page.locator('select[name="category"]')).toHaveValue('');
+  await expect(page.locator('tbody tr')).toHaveCount(4);
+});
+
+test('Manager participant records remain fully actionable at mobile width', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await choosePersona(page, 'Platform Manager');
+  await page.getByRole('link', { name: 'Participants', exact: true }).click();
+
+  const table = page.locator('.table-wrap');
+  const action = table.getByRole('button', { name: 'Review Suspend' }).first();
+  await action.scrollIntoViewIfNeeded();
+  await expect(action).toBeInViewport();
+  expect(await table.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+});
+
+test('Seller and Manager explain a truly empty Asset inventory', async ({ page }) => {
+  await choosePersona(page, 'Seller');
+  await deleteWorkspaceAssets(page);
+  await page.goto('/seller/assets');
+
+  await expect(page.getByText('No Assets published yet.')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Publish your first Asset' })).toBeVisible();
+
+  await choosePersona(page, 'Platform Manager');
+  await page.goto('/manager/assets');
+  await expect(
+    page.getByText('No Assets are currently listed in this demo workspace.'),
+  ).toBeVisible();
 });

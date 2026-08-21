@@ -6,7 +6,7 @@ import { AppPolicyError } from '@/server/policy/errors';
 import { addHours } from '@/server/time';
 import { buyerProfiles, demoAssets, demoUsers } from './fixture-data';
 
-const normalize = (value: string) => value.trim().toLowerCase();
+const normalize = (value: string) => value.normalize('NFKC').trim().toLowerCase();
 
 export async function provisionDemoWorkspace() {
   const env = getServerEnv();
@@ -14,77 +14,84 @@ export async function provisionDemoWorkspace() {
     throw new AppPolicyError('AUTH_REQUIRED', 'The public demo is closed.');
   }
 
-  const now = new Date();
-  await prisma.demoWorkspace.deleteMany({ where: { expiresAt: { lte: now } } });
-  const activeCount = await prisma.demoWorkspace.count({ where: { expiresAt: { gt: now } } });
-  if (activeCount >= env.MAX_DEMO_WORKSPACES) {
-    throw new AppPolicyError(
-      'DEMO_CAPACITY_REACHED',
-      'The public demo is temporarily at capacity.',
-    );
-  }
+  return prisma.$transaction(
+    async (tx) => {
+      await tx.$queryRaw<Array<{ lock: string }>>`
+        SELECT pg_advisory_xact_lock(7182, 20260821)::text AS "lock"
+      `;
 
-  return prisma.$transaction(async (tx) => {
-    const workspace = await tx.demoWorkspace.create({
-      data: { expiresAt: addHours(now, 24) },
-    });
-    const ids = new Map<string, string>();
+      const now = new Date();
+      await tx.demoWorkspace.deleteMany({ where: { expiresAt: { lte: now } } });
+      const activeCount = await tx.demoWorkspace.count({ where: { expiresAt: { gt: now } } });
+      if (activeCount >= env.MAX_DEMO_WORKSPACES) {
+        throw new AppPolicyError(
+          'DEMO_CAPACITY_REACHED',
+          'The public demo is temporarily at capacity.',
+        );
+      }
 
-    for (const user of demoUsers) {
-      const created = await tx.user.create({
-        data: {
-          workspaceId: workspace.id,
-          role: user.role,
-          status: 'ACTIVE',
-          name: user.name,
-          organization: user.organization,
-          email: user.email,
-          normalizedEmail: normalize(user.email),
-          countryCode: user.countryCode,
-          profileSummary: user.profileSummary,
-        },
+      const workspace = await tx.demoWorkspace.create({
+        data: { expiresAt: addHours(now, 24) },
       });
-      ids.set(user.key, created.id);
-    }
+      const ids = new Map<string, string>();
 
-    for (const profile of buyerProfiles) {
-      await tx.buyerProfile.create({
-        data: {
-          userId: ids.get(profile.userKey)!,
-          investmentThesis: profile.investmentThesis,
-          budgetMinEur: profile.budgetMinEur,
-          budgetMaxEur: profile.budgetMaxEur,
-          targetCountries: [...profile.targetCountries],
-          targetCategories: [...profile.targetCategories],
-          targetLicenseTypes: [...profile.targetLicenseTypes],
-          targetBusinessStatuses: [...profile.targetBusinessStatuses],
-          minEmployees: profile.minEmployees,
-          maxEmployees: profile.maxEmployees,
-        },
-      });
-    }
+      for (const user of demoUsers) {
+        const created = await tx.user.create({
+          data: {
+            workspaceId: workspace.id,
+            role: user.role,
+            status: 'ACTIVE',
+            name: user.name,
+            organization: user.organization,
+            email: user.email,
+            normalizedEmail: normalize(user.email),
+            countryCode: user.countryCode,
+            profileSummary: user.profileSummary,
+          },
+        });
+        ids.set(user.key, created.id);
+      }
 
-    for (const asset of demoAssets) {
-      await tx.asset.create({
-        data: {
-          workspaceId: workspace.id,
-          sellerId: ids.get(asset.sellerKey)!,
-          title: asset.title,
-          normalizedTitle: normalize(asset.title),
-          summary: asset.summary,
-          description: asset.description,
-          category: asset.category,
-          countryCode: asset.countryCode,
-          licenseType: asset.licenseType,
-          regulator: asset.regulator,
-          businessStatus: asset.businessStatus,
-          askingPriceEur: asset.askingPriceEur,
-          employeeCount: asset.employeeCount,
-          highlights: [...asset.highlights],
-        },
-      });
-    }
+      for (const profile of buyerProfiles) {
+        await tx.buyerProfile.create({
+          data: {
+            userId: ids.get(profile.userKey)!,
+            investmentThesis: profile.investmentThesis,
+            budgetMinEur: profile.budgetMinEur,
+            budgetMaxEur: profile.budgetMaxEur,
+            targetCountries: [...profile.targetCountries],
+            targetCategories: [...profile.targetCategories],
+            targetLicenseTypes: [...profile.targetLicenseTypes],
+            targetBusinessStatuses: [...profile.targetBusinessStatuses],
+            minEmployees: profile.minEmployees,
+            maxEmployees: profile.maxEmployees,
+          },
+        });
+      }
 
-    return { workspaceId: workspace.id, personaIds: ids };
-  });
+      for (const asset of demoAssets) {
+        await tx.asset.create({
+          data: {
+            workspaceId: workspace.id,
+            sellerId: ids.get(asset.sellerKey)!,
+            title: asset.title,
+            normalizedTitle: normalize(asset.title),
+            summary: asset.summary,
+            description: asset.description,
+            category: asset.category,
+            countryCode: asset.countryCode,
+            licenseType: asset.licenseType,
+            regulator: asset.regulator,
+            businessStatus: asset.businessStatus,
+            askingPriceEur: asset.askingPriceEur,
+            employeeCount: asset.employeeCount,
+            highlights: [...asset.highlights],
+          },
+        });
+      }
+
+      return { workspaceId: workspace.id, personaIds: ids };
+    },
+    { maxWait: 10_000, timeout: 15_000 },
+  );
 }

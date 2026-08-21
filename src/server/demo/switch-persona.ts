@@ -14,7 +14,7 @@ async function findPersona(workspaceId: string, role: UserRole) {
     where: {
       workspaceId,
       role,
-      status: { not: 'REMOVED' },
+      status: 'ACTIVE',
       workspace: { expiresAt: { gt: new Date() } },
     },
     orderBy: { createdAt: 'asc' },

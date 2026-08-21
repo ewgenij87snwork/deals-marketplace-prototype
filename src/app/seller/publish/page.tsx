@@ -1,10 +1,8 @@
 import { AppShell } from '@/components/app-shell';
 import { PublishAssetForm } from '@/components/marketplace-forms';
-import { requirePrincipal } from '@/server/session/signed-session';
-import { requireRole } from '@/server/policy/authorization';
+import { requirePageAccess } from '@/server/policy/page-access';
 export default async function SellerPublishPage() {
-  const principal = await requirePrincipal();
-  requireRole(principal, 'SELLER');
+  const principal = await requirePageAccess('SELLER');
   return (
     <AppShell principal={principal} title="Publish an Asset" eyebrow="Seller / listing">
       <p className="lead">

@@ -18,4 +18,6 @@ Every read/mutation resolves the session, checks workspace, role, and participan
 
 ## Search and scale
 
-Demo lists use bounded pagination and indexed relational filters. If evidence later requires high-volume free text, PostgreSQL full-text/trigram indexes are the next step—not a search service added in advance.
+Buyer and Manager discovery lists use bounded pagination and indexed relational filters. Smaller
+persona-owned/contact reads have explicit hard caps. If evidence later requires high-volume free
+text, PostgreSQL full-text/trigram indexes are the next step—not a search service added in advance.

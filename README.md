@@ -67,7 +67,9 @@ pnpm verify
 pnpm test:e2e
 ```
 
-`pnpm verify` is the consolidated lint, format, type, unit, production-build, and diff gate. The Playwright release suite exercises 12 real desktop/mobile scenarios across Buyer, Seller, and Platform Manager flows.
+`pnpm verify` is the consolidated project-policy, lint, format, type, unit/integration,
+production-build, and diff gate. The Playwright release suite exercises real desktop/mobile
+scenarios across Buyer, Seller, Platform Manager, recovery, security, and responsive states.
 
 ## Assumptions
 
@@ -86,7 +88,9 @@ pnpm test:e2e
 - Seller suspension hides published Assets and blocks new Contact;
 - cross-workspace guessed IDs;
 - invalid URL filters;
-- empty, error, and unavailable states.
+- distinct zero-result/zero-inventory, loading, recoverable network, and unavailable states;
+- stale/missing sessions and wrong-role routes;
+- concurrent workspace capacity and duplicate-publication races.
 
 ## With more time
 
@@ -107,4 +111,6 @@ After review, set `DEMO_MODE_ENABLED=false` and redeploy, enable deployment prot
 - Demo workspaces expire after 24 hours and production creation is capped at 40 active workspaces.
 - Contact is persisted in-app; the prototype does not send email or realtime notifications.
 - The free hosting/database tiers can cold-start after inactivity and are not an availability SLA.
+- The GitHub repository must be made public separately before assignment submission if the reviewer
+  is expected to access source without an invitation.
 - No real or confidential deal data should be entered.

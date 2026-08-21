@@ -23,4 +23,13 @@ describe('signed demo session', () => {
     });
     expect(parseSessionToken(`${token}x`)).toBeNull();
   });
+  it('rejects tokens with trailing segments', () => {
+    const token = createSessionToken({
+      workspaceId: crypto.randomUUID(),
+      activeUserId: crypto.randomUUID(),
+      exp: Date.now() + 60_000,
+    });
+
+    expect(parseSessionToken(`${token}.extra`)).toBeNull();
+  });
 });

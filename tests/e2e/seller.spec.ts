@@ -77,3 +77,28 @@ test('Seller canonicalizes malformed Buyer filters and Asset context', async ({ 
   await expect(page.locator('input[name="country"]')).toHaveValue('');
   await expect(page.locator('select[name="asset"]')).not.toHaveValue('');
 });
+
+test('Seller listing text is rendered literally and cannot execute markup', async ({ page }) => {
+  await choosePersona(page, 'Seller');
+  await page.goto('/seller/publish');
+  const title = '<img src=x onerror="window.__n5_pwned=1">';
+
+  await page.locator('input[name="title"]').fill(title);
+  await page.locator('input[name="askingPriceEur"]').fill('900000');
+  await page
+    .locator('textarea[name="summary"]')
+    .fill('A fictional literal-rendering test listing with sufficient summary context.');
+  await page
+    .locator('textarea[name="description"]')
+    .fill(
+      'This isolated fictional listing proves that reviewer supplied markup stays inert when it is read back from the database.',
+    );
+  await page.locator('input[name="highlights"]').fill('Fictional, isolated');
+  await page.getByRole('button', { name: 'Publish Asset', exact: true }).click();
+  await expect(page.getByRole('status')).toHaveText('Saved successfully.');
+
+  await page.goto('/seller/assets');
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+  await expect(page.locator('img[src="x"]')).toHaveCount(0);
+  expect(await page.evaluate(() => Reflect.has(window, '__n5_pwned'))).toBe(false);
+});

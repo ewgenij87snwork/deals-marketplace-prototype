@@ -1,16 +1,19 @@
-import { switchPersonaAction } from './actions/demo';
+import { PersonaChooser } from '@/components/persona-chooser';
 
-const roles = [
-  ['BUYER', 'Buyer', 'Maintain an acquisition mandate, explore Assets, and contact Sellers.'],
-  ['SELLER', 'Seller', 'Publish an Asset, discover relevant Buyers, and send an inquiry.'],
-  [
-    'PLATFORM_MANAGER',
-    'Platform Manager',
-    'Review marketplace participants and moderate non-compliant accounts.',
-  ],
-] as const;
+const notices: Record<string, string> = {
+  session: 'Your demo session expired or is no longer available.',
+  suspended: 'This demo participant is suspended.',
+  removed: 'This demo participant was removed.',
+  reset: 'The previous demo workspace was reset.',
+};
 
-export default function WelcomePage() {
+export default async function WelcomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const value = (await searchParams).notice;
+  const notice = typeof value === 'string' ? notices[value] : undefined;
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-16">
       <div className="mb-10 max-w-3xl">
@@ -25,23 +28,12 @@ export default function WelcomePage() {
           after refresh without affecting another reviewer.
         </p>
       </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        {roles.map(([value, title, description]) => (
-          <form
-            action={switchPersonaAction}
-            className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-            key={value}
-          >
-            <input name="role" type="hidden" value={value} />
-            <h2 className="text-xl font-semibold">{title}</h2>
-            <p className="mt-2 min-h-20 text-sm leading-6 text-slate-600">{description}</p>
-            <button className="mt-6 min-h-11 w-full rounded-xl bg-blue-600 px-4 font-medium text-white hover:bg-blue-700">
-              Continue as {title}
-            </button>
-          </form>
-        ))}
-      </div>
+      {notice && (
+        <p className="mb-5 rounded-xl bg-blue-50 p-4 text-sm text-blue-900" role="status">
+          {notice}
+        </p>
+      )}
+      <PersonaChooser />
     </main>
   );
 }

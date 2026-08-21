@@ -1,12 +1,18 @@
 # AI usage and ownership
 
-AI tools were used to accelerate planning, implementation, tests, and review. The author retained ownership by:
+OpenAI Codex assisted with repository analysis, implementation, test authoring, debugging, and the
+final verification pass. Browser checks used the real local and deployed application; code claims
+were accepted only when backed by Vitest, Playwright, Prisma, build, audit, or CI evidence.
 
-- rejecting an earlier over-engineered execution system;
-- freezing product contracts before parallel implementation;
-- requiring focused tests and integrated proof;
-- keeping Smart Match deterministic and explainable;
-- separating optional runtime AI from core correctness;
-- reviewing every merged cluster and documenting known limitations.
+The owner supplied the product brief, frozen scope, infrastructure choices, and deployment access.
+The implementation kept Smart Match and Smart Validation deterministic and inspectable rather than
+introducing a runtime LLM dependency.
 
-Before submission, replace this draft with the exact tools/models used, what they generated, what was rejected or changed, and which commands verified the final output. Do not paste private transcripts or claim human authorship of unreviewed generated code.
+Material AI suggestions that were rejected or narrowed included a second backend, a generic async
+state-machine library, speculative search infrastructure, and a nonce-based CSP system that was not
+needed for this bounded prototype. The shipped path remains one Next.js application with scoped
+PostgreSQL reads, explicit policy checks, and local UI state.
+
+Final verification is recorded through the repository's consolidated `pnpm verify` gate, the full
+Playwright suite, a production dependency audit, CI, and live deployment smoke tests. Private
+transcripts, credentials, and shared planning archives are intentionally excluded from source.

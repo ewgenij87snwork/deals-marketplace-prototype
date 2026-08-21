@@ -2,10 +2,11 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { AppShell } from '@/components/app-shell';
 import { ModerationForm } from '@/components/marketplace-forms';
+import { Pagination } from '@/components/pagination';
+import { UrlFilterForm } from '@/components/url-filter-form';
 import { participantQuerySchema } from '@/domain/validation';
-import { requirePrincipal } from '@/server/session/signed-session';
+import { requirePageAccess } from '@/server/policy/page-access';
 import { listParticipants } from '@/server/queries/marketplace';
-import { requireRole } from '@/server/policy/authorization';
 
 const roles = ['BUYER', 'SELLER'] as const;
 const statuses = ['ACTIVE', 'SUSPENDED', 'REMOVED'] as const;
@@ -21,8 +22,7 @@ export default async function ManagerParticipantsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const principal = await requirePrincipal();
-  requireRole(principal, 'PLATFORM_MANAGER');
+  const principal = await requirePageAccess('PLATFORM_MANAGER');
   const params = await searchParams;
   const parsed = managerParticipantQuerySchema.safeParse({
     q: params.q ?? '',
@@ -32,16 +32,17 @@ export default async function ManagerParticipantsPage({
     page: optionalQueryValue(params.page),
   });
   if (!parsed.success) redirect('/manager/participants');
-  const { q, role, status, country } = parsed.data;
-  const people = await listParticipants(principal, {
+  const { q, role, status, country, page } = parsed.data;
+  const data = await listParticipants(principal, {
     q,
     role,
     status,
     country,
+    page,
   });
   return (
     <AppShell principal={principal} title="Participants" eyebrow="Manager / oversight">
-      <form className="search-bar">
+      <UrlFilterForm>
         <input name="q" defaultValue={q} placeholder="Search people or organizations" />
         <select aria-label="Participant role" defaultValue={role ?? ''} name="role">
           <option value="">All roles</option>
@@ -63,8 +64,8 @@ export default async function ManagerParticipantsPage({
           placeholder="Country code"
         />
         <button className="button primary">Search</button>
-      </form>
-      <div className="table-wrap">
+      </UrlFilterForm>
+      <div className="table-wrap record-table">
         <table>
           <thead>
             <tr>
@@ -76,20 +77,20 @@ export default async function ManagerParticipantsPage({
             </tr>
           </thead>
           <tbody>
-            {people.map((person) => (
+            {data.people.map((person) => (
               <tr key={person.id}>
-                <td>
+                <td data-label="Participant">
                   <strong>{person.organization}</strong>
                   <small>
                     {person.name} · {person.countryCode}
                   </small>
                 </td>
-                <td>{person.role}</td>
-                <td>
+                <td data-label="Role">{person.role}</td>
+                <td data-label="Status">
                   <span className={`status ${person.status.toLowerCase()}`}>{person.status}</span>
                 </td>
-                <td>{person._count.assets}</td>
-                <td>
+                <td data-label="Assets">{person._count.assets}</td>
+                <td data-label="Action">
                   {person.status !== 'REMOVED' && (
                     <div className="moderation-actions">
                       <ModerationForm
@@ -105,6 +106,16 @@ export default async function ManagerParticipantsPage({
           </tbody>
         </table>
       </div>
+      {data.people.length === 0 && (
+        <div className="empty">No participants match the current Manager filters.</div>
+      )}
+      <Pagination
+        page={data.page}
+        pageSize={data.pageSize}
+        params={{ q, role, status, country }}
+        pathname="/manager/participants"
+        total={data.total}
+      />
     </AppShell>
   );
 }

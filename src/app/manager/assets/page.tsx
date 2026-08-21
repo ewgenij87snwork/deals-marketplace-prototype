@@ -1,44 +1,123 @@
+import { redirect } from 'next/navigation';
+import { z } from 'zod';
 import { AppShell } from '@/components/app-shell';
-import { requirePrincipal } from '@/server/session/signed-session';
+import { Pagination } from '@/components/pagination';
+import { UrlFilterForm } from '@/components/url-filter-form';
+import { ASSET_CATEGORIES, PARTICIPANT_STATUSES } from '@/domain/taxonomy';
+import { requirePageAccess } from '@/server/policy/page-access';
 import { listManagerAssets } from '@/server/queries/marketplace';
-import { requireRole } from '@/server/policy/authorization';
-export default async function ManagerAssetsPage() {
-  const principal = await requirePrincipal();
-  requireRole(principal, 'PLATFORM_MANAGER');
-  const assets = await listManagerAssets(principal);
+
+const managerAssetQuerySchema = z.object({
+  q: z.string().trim().max(120).default(''),
+  category: z.enum(ASSET_CATEGORIES).optional(),
+  country: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z]{2}$/)
+    .optional(),
+  sellerStatus: z.enum(PARTICIPANT_STATUSES).optional(),
+  page: z.coerce.number().int().min(1).max(100).default(1),
+});
+
+const optionalQueryValue = (value: string | string[] | undefined) =>
+  value === '' ? undefined : value;
+
+export default async function ManagerAssetsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const principal = await requirePageAccess('PLATFORM_MANAGER');
+  const params = await searchParams;
+  const parsed = managerAssetQuerySchema.safeParse({
+    q: params.q ?? '',
+    category: optionalQueryValue(params.category),
+    country: optionalQueryValue(params.country),
+    sellerStatus: optionalQueryValue(params.sellerStatus),
+    page: optionalQueryValue(params.page),
+  });
+  if (!parsed.success) redirect('/manager/assets');
+  const { q, category, country, sellerStatus, page } = parsed.data;
+  const data = await listManagerAssets(principal, {
+    q,
+    category,
+    country,
+    sellerStatus,
+    page,
+  });
   return (
     <AppShell principal={principal} title="Asset inventory" eyebrow="Manager / oversight">
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Asset</th>
-              <th>Category</th>
-              <th>Country</th>
-              <th>Seller</th>
-              <th>Price</th>
-            </tr>
-          </thead>
-          <tbody>
-            {assets.map((asset) => (
-              <tr key={asset.id}>
-                <td>
-                  <strong>{asset.title}</strong>
-                </td>
-                <td>{asset.category}</td>
-                <td>{asset.countryCode}</td>
-                <td>
-                  {asset.seller.organization}{' '}
-                  <span className={`status ${asset.seller.status.toLowerCase()}`}>
-                    {asset.seller.status}
-                  </span>
-                </td>
-                <td>€{asset.askingPriceEur.toLocaleString()}</td>
+      <UrlFilterForm>
+        <input aria-label="Search Assets" defaultValue={q} name="q" placeholder="Asset or Seller" />
+        <select aria-label="Asset category" defaultValue={category ?? ''} name="category">
+          <option value="">All categories</option>
+          {ASSET_CATEGORIES.map((value) => (
+            <option key={value}>{value}</option>
+          ))}
+        </select>
+        <input
+          aria-label="Asset country"
+          defaultValue={country ?? ''}
+          maxLength={2}
+          name="country"
+          placeholder="Country code"
+        />
+        <select aria-label="Seller status" defaultValue={sellerStatus ?? ''} name="sellerStatus">
+          <option value="">All Seller statuses</option>
+          {PARTICIPANT_STATUSES.map((value) => (
+            <option key={value}>{value}</option>
+          ))}
+        </select>
+        <button className="button primary">Search</button>
+      </UrlFilterForm>
+      {data.assets.length > 0 && (
+        <div className="table-wrap record-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Category</th>
+                <th>Country</th>
+                <th>Seller</th>
+                <th>Price</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {data.assets.map((asset) => (
+                <tr key={asset.id}>
+                  <td data-label="Asset">
+                    <strong>{asset.title}</strong>
+                  </td>
+                  <td data-label="Category">{asset.category}</td>
+                  <td data-label="Country">{asset.countryCode}</td>
+                  <td data-label="Seller">
+                    {asset.seller.organization}{' '}
+                    <span className={`status ${asset.seller.status.toLowerCase()}`}>
+                      {asset.seller.status}
+                    </span>
+                  </td>
+                  <td data-label="Price">€{asset.askingPriceEur.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {data.assets.length === 0 && (
+        <div className="empty">
+          {data.total === 0 && !q && !category && !country && !sellerStatus
+            ? 'No Assets are currently listed in this demo workspace.'
+            : 'No Assets match the current Manager filters.'}
+        </div>
+      )}
+      <Pagination
+        page={data.page}
+        pageSize={data.pageSize}
+        params={{ q, category, country, sellerStatus }}
+        pathname="/manager/assets"
+        total={data.total}
+      />
     </AppShell>
   );
 }
