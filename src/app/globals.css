@@ -968,6 +968,32 @@ textarea {
   background: var(--primary);
   animation: route-progress 1.05s ease-in-out infinite;
 }
+.navigation-feedback {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 71;
+  height: 3px;
+  overflow: hidden;
+  background: rgb(31 94 255 / 12%);
+}
+.navigation-feedback-bar {
+  display: block;
+  width: 38%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  animation: navigation-feedback 0.75s ease-in-out infinite;
+}
+@keyframes navigation-feedback {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(290%);
+  }
+}
 @keyframes route-progress {
   from {
     transform: translateX(-110%);
@@ -1403,6 +1429,11 @@ details > summary:hover {
     animation: none;
   }
   .route-progress-bar {
+    width: 100%;
+    animation: none;
+    transform: none;
+  }
+  .navigation-feedback-bar {
     width: 100%;
     animation: none;
     transform: none;

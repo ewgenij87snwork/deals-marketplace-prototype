@@ -4,6 +4,8 @@ import WelcomePage from '@/app/page';
 import { AppShell } from './app-shell';
 
 vi.mock('next/navigation', () => ({
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }),
 }));
 

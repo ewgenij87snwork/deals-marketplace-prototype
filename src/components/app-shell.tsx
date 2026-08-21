@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { Principal } from '@/server/policy/authorization';
 import { CreatorSignature } from '@/components/creator-signature';
+import { NavigationFeedback } from '@/components/navigation-feedback';
 import { ResetDemoButton } from '@/components/reset-demo-button';
 
 export function AppShell({ principal, children }: { principal: Principal; children: ReactNode }) {
@@ -25,6 +26,7 @@ export function AppShell({ principal, children }: { principal: Principal; childr
           ];
   return (
     <div className="app-shell">
+      <NavigationFeedback />
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
