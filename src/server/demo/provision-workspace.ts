@@ -52,43 +52,39 @@ export async function provisionDemoWorkspace() {
         ids.set(user.key, created.id);
       }
 
-      for (const profile of buyerProfiles) {
-        await tx.buyerProfile.create({
-          data: {
-            userId: ids.get(profile.userKey)!,
-            investmentThesis: profile.investmentThesis,
-            budgetMinEur: profile.budgetMinEur,
-            budgetMaxEur: profile.budgetMaxEur,
-            targetCountries: [...profile.targetCountries],
-            targetCategories: [...profile.targetCategories],
-            targetLicenseTypes: [...profile.targetLicenseTypes],
-            targetBusinessStatuses: [...profile.targetBusinessStatuses],
-            minEmployees: profile.minEmployees,
-            maxEmployees: profile.maxEmployees,
-          },
-        });
-      }
+      await tx.buyerProfile.createMany({
+        data: buyerProfiles.map((profile) => ({
+          userId: ids.get(profile.userKey)!,
+          investmentThesis: profile.investmentThesis,
+          budgetMinEur: profile.budgetMinEur,
+          budgetMaxEur: profile.budgetMaxEur,
+          targetCountries: [...profile.targetCountries],
+          targetCategories: [...profile.targetCategories],
+          targetLicenseTypes: [...profile.targetLicenseTypes],
+          targetBusinessStatuses: [...profile.targetBusinessStatuses],
+          minEmployees: profile.minEmployees,
+          maxEmployees: profile.maxEmployees,
+        })),
+      });
 
-      for (const asset of demoAssets) {
-        await tx.asset.create({
-          data: {
-            workspaceId: workspace.id,
-            sellerId: ids.get(asset.sellerKey)!,
-            title: asset.title,
-            normalizedTitle: normalize(asset.title),
-            summary: asset.summary,
-            description: asset.description,
-            category: asset.category,
-            countryCode: asset.countryCode,
-            licenseType: asset.licenseType,
-            regulator: asset.regulator,
-            businessStatus: asset.businessStatus,
-            askingPriceEur: asset.askingPriceEur,
-            employeeCount: asset.employeeCount,
-            highlights: [...asset.highlights],
-          },
-        });
-      }
+      await tx.asset.createMany({
+        data: demoAssets.map((asset) => ({
+          workspaceId: workspace.id,
+          sellerId: ids.get(asset.sellerKey)!,
+          title: asset.title,
+          normalizedTitle: normalize(asset.title),
+          summary: asset.summary,
+          description: asset.description,
+          category: asset.category,
+          countryCode: asset.countryCode,
+          licenseType: asset.licenseType,
+          regulator: asset.regulator,
+          businessStatus: asset.businessStatus,
+          askingPriceEur: asset.askingPriceEur,
+          employeeCount: asset.employeeCount,
+          highlights: [...asset.highlights],
+        })),
+      });
 
       return { workspaceId: workspace.id, personaIds: ids };
     },

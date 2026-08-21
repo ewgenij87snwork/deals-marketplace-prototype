@@ -66,10 +66,10 @@ export function calculateMatch(criteria: BuyerCriteria, asset: MatchableAsset): 
     30,
     inBudget ? 'match' : nearBudget ? 'partial' : 'gap',
     inBudget
-      ? 'Asking price fits the mandate'
+      ? "Asking price fits the Buyer's budget"
       : nearBudget
-        ? 'Asking price is close to the mandate'
-        : 'Asking price is outside the mandate',
+        ? "Asking price is close to the Buyer's budget"
+        : "Asking price is outside the Buyer's budget",
     inBudget ? 1 : nearBudget ? 0.5 : 0,
   );
 
@@ -81,7 +81,9 @@ export function calculateMatch(criteria: BuyerCriteria, asset: MatchableAsset): 
       configured,
       weight,
       matched ? 'match' : 'gap',
-      matched ? `${dimension} matches the mandate` : `${dimension} is outside the mandate`,
+      matched
+        ? `${dimension[0].toUpperCase()}${dimension.slice(1)} matches the mandate`
+        : `${dimension[0].toUpperCase()}${dimension.slice(1)} does not match`,
       matched ? 1 : 0,
     );
   };
@@ -101,10 +103,10 @@ export function calculateMatch(criteria: BuyerCriteria, asset: MatchableAsset): 
     15,
     actualLicense.length === 0 ? 'unknown' : licenseMatched ? 'match' : 'gap',
     actualLicense.length === 0
-      ? 'Licence is not disclosed'
+      ? 'Licence information is not disclosed'
       : licenseMatched
         ? 'Licence interest matches'
-        : 'Licence is outside the mandate',
+        : 'Licence type does not match',
     licenseMatched ? 1 : 0,
   );
 
@@ -121,8 +123,8 @@ export function calculateMatch(criteria: BuyerCriteria, asset: MatchableAsset): 
     asset.employeeCount === null
       ? 'Team size is not disclosed'
       : employeesMatched
-        ? 'Team size fits'
-        : 'Team size is outside the mandate',
+        ? 'Team size fits the mandate'
+        : 'Team size does not match',
     employeesMatched ? 1 : 0,
   );
 

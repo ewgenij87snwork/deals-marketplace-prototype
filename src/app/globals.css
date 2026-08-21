@@ -363,20 +363,23 @@ p {
   color: #176f4d;
   font-size: 14px;
 }
+.match.match-partial {
+  background: #fff8e7;
+  color: #80561d;
+}
+.match.match-gap {
+  background: #fff1f0;
+  color: #8b3a36;
+}
 .match.prominent {
   margin: 22px 0;
 }
 .match span {
   color: #356b55;
 }
-.match-reasons {
-  display: grid;
-  gap: 2px;
-  margin: 3px 0 0;
-  padding-left: 16px;
-  color: #356b55;
-  font-size: 12px;
-  line-height: 1.35;
+.match.match-partial span,
+.match.match-gap span {
+  color: inherit;
 }
 .text-link {
   margin-top: auto;

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import type { MatchResult } from '@/domain/matching';
 import { PageHeader } from '@/components/app-shell';
 import { ContactForm } from '@/components/marketplace-forms';
 import { UrlFilterForm } from '@/components/url-filter-form';
@@ -9,6 +10,26 @@ import { listBuyers, listOwnAssets } from '@/server/queries/marketplace';
 const sellerBuyerQuerySchema = participantQuerySchema.pick({ q: true, country: true });
 const optionalQueryValue = (value: string | string[] | undefined) =>
   value === '' ? undefined : value;
+const matchTone = (score: number) =>
+  score >= 70 ? 'match-fit' : score > 0 ? 'match-partial' : 'match-gap';
+const matchDimensionLabel = (dimension: string) =>
+  dimension === 'business status' ? 'status' : dimension;
+
+function matchSummary(match: MatchResult) {
+  const matched = match.reasons
+    .filter((reason) => reason.outcome === 'match')
+    .map((reason) => matchDimensionLabel(reason.dimension));
+  const gaps = match.reasons
+    .filter((reason) => reason.outcome === 'gap')
+    .map((reason) => matchDimensionLabel(reason.dimension));
+  if (match.fitScore >= 70) return `Strong fit — ${matched.slice(0, 3).join(', ')} align.`;
+  if (match.fitScore > 0) {
+    return `Partial fit — ${matched.slice(0, 2).join(', ') || 'some criteria'} match; ${gaps
+      .slice(0, 2)
+      .join(', ')} need review.`;
+  }
+  return `No fit yet — ${gaps.slice(0, 3).join(', ') || 'key criteria'} do not match.`;
+}
 
 export default async function SellerBuyersPage({
   searchParams,
@@ -96,19 +117,14 @@ export default async function SellerBuyersPage({
             <h2>{buyer.organization}</h2>
             <p>{buyer.thesis}</p>
             {buyer.match && (
-              <div className="match">
+              <div className={`match ${matchTone(buyer.match.fitScore)}`}>
                 <strong>
-                  {buyer.match.fitScore}% Smart Match
+                  {buyer.match.fitScore}% Match
                   <span className="method-badge" title="Deterministic rules; no live AI is used.">
                     Rule-based
                   </span>
                 </strong>
-                <span>{buyer.match.reasons[0]?.label}</span>
-                <ul className="match-reasons" aria-label="Match details">
-                  {buyer.match.reasons.slice(0, 3).map((reason) => (
-                    <li key={reason.dimension}>{reason.label}</li>
-                  ))}
-                </ul>
+                <span className="match-summary">{matchSummary(buyer.match)}</span>
               </div>
             )}
             <details>
