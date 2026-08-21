@@ -40,10 +40,22 @@ export default async function ManagerParticipantsPage({
     country,
     page,
   });
+  const countrySuggestions = [...new Set(data.people.map((person) => person.countryCode))].sort();
+  const querySuggestions = [
+    ...new Set(data.people.flatMap((person) => [person.name, person.organization])),
+  ].sort();
   return (
     <AppShell principal={principal} title="Participants" eyebrow="Manager / oversight">
       <UrlFilterForm>
-        <input name="q" defaultValue={q} placeholder="Search people or organizations" />
+        <input
+          aria-label="Search participants"
+          autoComplete="off"
+          defaultValue={q}
+          list="participant-query-suggestions"
+          maxLength={120}
+          name="q"
+          placeholder="Search people or organizations"
+        />
         <select aria-label="Participant role" defaultValue={role ?? ''} name="role">
           <option value="">All roles</option>
           {roles.map((value) => (
@@ -58,12 +70,26 @@ export default async function ManagerParticipantsPage({
         </select>
         <input
           aria-label="Participant country"
+          autoCapitalize="characters"
+          autoComplete="off"
           defaultValue={country ?? ''}
+          list="participant-country-suggestions"
           maxLength={2}
           name="country"
           placeholder="Country code"
+          pattern="[A-Za-z]{2}"
         />
         <button className="button primary">Search</button>
+        <datalist id="participant-query-suggestions">
+          {querySuggestions.map((value) => (
+            <option key={value} value={value} />
+          ))}
+        </datalist>
+        <datalist id="participant-country-suggestions">
+          {countrySuggestions.map((value) => (
+            <option key={value} value={value} />
+          ))}
+        </datalist>
       </UrlFilterForm>
       <div className="table-wrap record-table">
         <table>

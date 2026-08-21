@@ -5,8 +5,8 @@ test.afterEach(async ({ page }) => cleanupWorkspace(page));
 
 async function marketplaceFilterScope(page: Page) {
   if ((page.viewportSize()?.width ?? 1280) > 600) return page;
-  await page.getByRole('button', { name: 'Filters' }).click();
   const sheet = page.getByRole('dialog', { name: 'Marketplace filters' });
+  if (!(await sheet.isVisible())) await page.getByRole('button', { name: 'Filters' }).click();
   await expect(sheet).toBeVisible();
   return sheet;
 }
@@ -47,6 +47,25 @@ test('Buyer mandate persists and URL filters Assets', async ({ page }) => {
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toContainText('Lithuanian EMI Licence');
   await expect(cards.first()).toContainText('Smart Match');
+});
+
+test('Buyer search autocompletes and updates results without a document reload', async ({
+  page,
+}) => {
+  await choosePersona(page, 'Buyer');
+  await page.getByRole('link', { name: 'Marketplace', exact: true }).click();
+
+  const filters = await marketplaceFilterScope(page);
+  const search = filters.locator('input[name="q"]');
+  await expect(search).toHaveAttribute('list', 'asset-query-suggestions');
+  expect(await filters.locator('#asset-query-suggestions option').count()).toBeGreaterThan(0);
+  await page.evaluate(() => Reflect.set(window, '__n5_live_search', 'alive'));
+
+  await search.fill('Lithuanian EMI');
+
+  await expect(page).toHaveURL(/q=Lithuanian\+EMI/);
+  await expect(page.locator('article.market-card')).toHaveCount(1);
+  expect(await page.evaluate(() => Reflect.get(window, '__n5_live_search'))).toBe('alive');
 });
 
 test('Buyer contact retry remains one persisted inquiry', async ({ page }) => {

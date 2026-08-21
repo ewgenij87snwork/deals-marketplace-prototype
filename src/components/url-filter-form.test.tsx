@@ -1,19 +1,75 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UrlFilterForm } from './url-filter-form';
 
-const navigation = vi.hoisted(() => ({ search: '' }));
+const navigation = vi.hoisted(() => ({
+  pathname: '/manager/assets',
+  push: vi.fn(),
+  search: '',
+}));
 
 vi.mock('next/navigation', () => ({
+  usePathname: () => navigation.pathname,
+  useRouter: () => ({ push: navigation.push }),
   useSearchParams: () => new URLSearchParams(navigation.search),
 }));
 
 describe('UrlFilterForm', () => {
   beforeEach(() => {
+    navigation.push.mockReset();
     navigation.search = 'q=UK';
   });
 
-  afterEach(cleanup);
+  afterEach(() => {
+    vi.useRealTimers();
+    cleanup();
+  });
+
+  it('updates filtered results through client navigation after a short typing debounce', async () => {
+    vi.useFakeTimers();
+    navigation.search = '';
+    render(
+      <UrlFilterForm>
+        <input aria-label="Query" defaultValue="" name="q" />
+      </UrlFilterForm>,
+    );
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Query' }), {
+      target: { value: 'Lithuanian EMI' },
+    });
+    await act(() => vi.advanceTimersByTimeAsync(299));
+    expect(navigation.push).not.toHaveBeenCalled();
+
+    await act(() => vi.advanceTimersByTimeAsync(1));
+
+    expect(navigation.push).toHaveBeenCalledWith('/manager/assets?q=Lithuanian+EMI', {
+      scroll: false,
+    });
+  });
+
+  it('applies select filters after the shared debounce without a native form reload', async () => {
+    vi.useFakeTimers();
+    navigation.search = '';
+    render(
+      <UrlFilterForm>
+        <select aria-label="Category" defaultValue="" name="category">
+          <option value="">All</option>
+          <option value="EMI">EMI</option>
+        </select>
+      </UrlFilterForm>,
+    );
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Category' }), {
+      target: { value: 'EMI' },
+    });
+    await act(() => vi.advanceTimersByTimeAsync(299));
+    expect(navigation.push).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTimeAsync(1));
+
+    expect(navigation.push).toHaveBeenCalledWith('/manager/assets?category=EMI', {
+      scroll: false,
+    });
+  });
 
   it('preserves edits made immediately after the form first mounts', async () => {
     render(

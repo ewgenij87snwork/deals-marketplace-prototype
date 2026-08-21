@@ -52,6 +52,25 @@ test('Seller publishes an Asset and uses it for Buyer matching and contact', asy
   await expect(contact).toContainText(title);
 });
 
+test('Seller contact disclosure exposes the whole padded row as a click target', async ({
+  page,
+}) => {
+  await choosePersona(page, 'Seller');
+  await page.getByRole('link', { name: 'Find Buyers', exact: true }).click();
+
+  const card = page.locator('article.market-card').first();
+  const details = card.locator('details');
+  const summary = details.locator('summary');
+  const box = await summary.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+  expect(await summary.evaluate((element) => getComputedStyle(element).cursor)).toBe('pointer');
+
+  await summary.click({ position: { x: box!.width - 8, y: box!.height / 2 } });
+
+  await expect(details).toHaveAttribute('open', '');
+});
+
 test("Seller cannot inspect another Seller's Asset by guessed URL", async ({ page }) => {
   await choosePersona(page, 'Buyer');
   await page.getByRole('link', { name: 'Marketplace', exact: true }).click();

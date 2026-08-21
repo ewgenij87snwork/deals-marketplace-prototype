@@ -2,8 +2,9 @@
 
 import * as Dialog from '@radix-ui/react-dialog';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ASSET_CATEGORIES, BUSINESS_STATUSES } from '@/domain/taxonomy';
+import { UrlFilterForm } from '@/components/url-filter-form';
 
 type FilterValues = {
   q: string;
@@ -12,6 +13,11 @@ type FilterValues = {
   businessStatus: string;
   priceMin: string;
   priceMax: string;
+};
+
+export type MarketplaceFilterSuggestions = {
+  countries: string[];
+  queries: string[];
 };
 
 const valuesFromSearchParams = (params: { get: (name: string) => string | null }): FilterValues => {
@@ -26,9 +32,11 @@ const valuesFromSearchParams = (params: { get: (name: string) => string | null }
 };
 
 function Fields({
+  suggestions,
   values,
   update,
 }: {
+  suggestions: MarketplaceFilterSuggestions;
   values: FilterValues;
   update: (field: keyof FilterValues, value: string) => void;
 }) {
@@ -36,6 +44,9 @@ function Fields({
     <>
       <input
         aria-label="Search Assets"
+        autoComplete="off"
+        list="asset-query-suggestions"
+        maxLength={120}
         name="q"
         onChange={(event) => update('q', event.target.value)}
         placeholder="Search title or description"
@@ -54,10 +65,14 @@ function Fields({
       </select>
       <input
         aria-label="Country"
+        autoCapitalize="characters"
+        autoComplete="off"
+        list="asset-country-suggestions"
         maxLength={2}
         name="country"
         onChange={(event) => update('country', event.target.value)}
         placeholder="Country code"
+        pattern="[A-Za-z]{2}"
         value={values.country}
       />
       <select
@@ -73,6 +88,7 @@ function Fields({
       </select>
       <input
         aria-label="Minimum price"
+        autoComplete="off"
         min={0}
         name="priceMin"
         onChange={(event) => update('priceMin', event.target.value)}
@@ -82,6 +98,7 @@ function Fields({
       />
       <input
         aria-label="Maximum price"
+        autoComplete="off"
         min={0}
         name="priceMax"
         onChange={(event) => update('priceMax', event.target.value)}
@@ -90,11 +107,27 @@ function Fields({
         value={values.priceMax}
       />
       <button className="button primary">Search</button>
+      <datalist id="asset-query-suggestions">
+        {suggestions.queries.map((value) => (
+          <option key={value} value={value} />
+        ))}
+      </datalist>
+      <datalist id="asset-country-suggestions">
+        {suggestions.countries.map((value) => (
+          <option key={value} value={value} />
+        ))}
+      </datalist>
     </>
   );
 }
 
-function MarketplaceFiltersState({ initialValues }: { initialValues: FilterValues }) {
+function MarketplaceFiltersState({
+  initialValues,
+  suggestions,
+}: {
+  initialValues: FilterValues;
+  suggestions: MarketplaceFilterSuggestions;
+}) {
   const [mobile, setMobile] = useState(false);
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState<FilterValues>(initialValues);
@@ -117,9 +150,9 @@ function MarketplaceFiltersState({ initialValues }: { initialValues: FilterValue
 
   if (!mobile) {
     return (
-      <form action="/buyer/assets" className="search-bar asset-search-bar">
-        <Fields update={update} values={values} />
-      </form>
+      <UrlFilterForm className="search-bar asset-search-bar">
+        <Fields suggestions={suggestions} update={update} values={values} />
+      </UrlFilterForm>
     );
   }
 
@@ -135,9 +168,9 @@ function MarketplaceFiltersState({ initialValues }: { initialValues: FilterValue
         <Dialog.Content aria-label="Marketplace filters" className="filter-sheet">
           <Dialog.Title>Marketplace filters</Dialog.Title>
           <Dialog.Description>Search and narrow the current Asset inventory.</Dialog.Description>
-          <form action="/buyer/assets" className="mobile-filter-form">
-            <Fields update={update} values={values} />
-          </form>
+          <UrlFilterForm className="mobile-filter-form">
+            <Fields suggestions={suggestions} update={update} values={values} />
+          </UrlFilterForm>
           <Dialog.Close asChild>
             <button className="button" type="button">
               Close filters
@@ -149,9 +182,16 @@ function MarketplaceFiltersState({ initialValues }: { initialValues: FilterValue
   );
 }
 
-export function MarketplaceFilters() {
+export function MarketplaceFilters({
+  suggestions = { countries: [], queries: [] },
+}: {
+  suggestions?: MarketplaceFilterSuggestions;
+}) {
   const searchParams = useSearchParams();
-  const initialValues = valuesFromSearchParams(searchParams);
-  const signature = JSON.stringify(initialValues);
-  return <MarketplaceFiltersState initialValues={initialValues} key={signature} />;
+  const signature = searchParams.toString();
+  const initialValues = useMemo(
+    () => valuesFromSearchParams(new URLSearchParams(signature)),
+    [signature],
+  );
+  return <MarketplaceFiltersState initialValues={initialValues} suggestions={suggestions} />;
 }

@@ -37,9 +37,13 @@ export default async function BuyerAssetsPage({
     priceMax,
     page,
   });
+  const suggestions = {
+    countries: [...new Set(data.assets.map((asset) => asset.countryCode))].sort(),
+    queries: [...new Set(data.assets.map((asset) => asset.title))].sort(),
+  };
   return (
     <AppShell principal={principal} title="Explore Assets" eyebrow="Buyer / marketplace">
-      <MarketplaceFilters />
+      <MarketplaceFilters suggestions={suggestions} />
       <div className="card-grid">
         {data.assets.map((asset) => (
           <article className="market-card" key={asset.id}>

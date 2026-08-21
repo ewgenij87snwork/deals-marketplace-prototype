@@ -174,6 +174,8 @@ describe('ModerationForm', () => {
   it('recovers from a rejected server request and lets the Buyer retry', async () => {
     mocks.updateBuyerProfileAction.mockRejectedValueOnce(new Error('offline'));
     const user = userEvent.setup();
+    const editedThesis =
+      'Retain this edited mandate through an offline failure and submit it on retry.';
     render(
       <BuyerProfileForm
         profile={{
@@ -191,11 +193,22 @@ describe('ModerationForm', () => {
       />,
     );
 
+    const thesis = screen.getByRole('textbox', { name: 'Investment thesis' });
+    await user.clear(thesis);
+    await user.type(thesis, editedThesis);
     await user.click(screen.getByRole('button', { name: 'Save mandate' }));
 
     expect(
       await screen.findByText('The server could not be reached. Check your connection and retry.'),
     ).toBeVisible();
+    expect(thesis).toHaveValue(editedThesis);
     expect(screen.getByRole('button', { name: 'Save mandate' })).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: 'Save mandate' }));
+
+    expect(await screen.findByText('Saved successfully.')).toBeVisible();
+    expect(mocks.updateBuyerProfileAction).toHaveBeenLastCalledWith(
+      expect.objectContaining({ investmentThesis: editedThesis }),
+    );
   });
 });

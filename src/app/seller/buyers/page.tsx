@@ -35,10 +35,20 @@ export default async function SellerBuyersPage({
     country,
     selectedAssetId,
   });
+  const countrySuggestions = [...new Set(data.buyers.map((buyer) => buyer.countryCode))].sort();
+  const querySuggestions = [...new Set(data.buyers.map((buyer) => buyer.organization))].sort();
   return (
     <AppShell principal={principal} title="Find Buyers" eyebrow="Seller / matching">
       <UrlFilterForm>
-        <input name="q" defaultValue={q} placeholder="Search Buyers" />
+        <input
+          aria-label="Search Buyers"
+          autoComplete="off"
+          defaultValue={q}
+          list="buyer-query-suggestions"
+          maxLength={120}
+          name="q"
+          placeholder="Search Buyers"
+        />
         <select aria-label="Asset context" defaultValue={selectedAssetId ?? ''} name="asset">
           <option disabled value="">
             Select an Asset
@@ -51,12 +61,26 @@ export default async function SellerBuyersPage({
         </select>
         <input
           aria-label="Buyer country"
+          autoCapitalize="characters"
+          autoComplete="off"
           defaultValue={country ?? ''}
+          list="buyer-country-suggestions"
           maxLength={2}
           name="country"
           placeholder="Buyer country"
+          pattern="[A-Za-z]{2}"
         />
         <button className="button primary">Apply filters</button>
+        <datalist id="buyer-query-suggestions">
+          {querySuggestions.map((value) => (
+            <option key={value} value={value} />
+          ))}
+        </datalist>
+        <datalist id="buyer-country-suggestions">
+          {countrySuggestions.map((value) => (
+            <option key={value} value={value} />
+          ))}
+        </datalist>
       </UrlFilterForm>
       {data.selectedAsset && (
         <p className="notice success">Matching Buyers against {data.selectedAsset.title}.</p>

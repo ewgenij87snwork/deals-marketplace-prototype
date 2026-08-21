@@ -131,7 +131,6 @@ export function BuyerProfileForm({ profile }: { profile: Record<string, unknown>
   }
   return (
     <form
-      action={submit}
       className="form-card"
       onChange={(event) => {
         setState(null);
@@ -139,6 +138,10 @@ export function BuyerProfileForm({ profile }: { profile: Record<string, unknown>
           buyerInput(new FormData(event.currentTarget)),
         );
         setWarnings(result.success ? smartBuyerWarnings(result.data) : []);
+      }}
+      onSubmit={(event) => {
+        event.preventDefault();
+        void submit(new FormData(event.currentTarget));
       }}
     >
       <div className="form-grid">

@@ -46,10 +46,22 @@ export default async function ManagerAssetsPage({
     sellerStatus,
     page,
   });
+  const countrySuggestions = [...new Set(data.assets.map((asset) => asset.countryCode))].sort();
+  const querySuggestions = [
+    ...new Set(data.assets.flatMap((asset) => [asset.title, asset.seller.organization])),
+  ].sort();
   return (
     <AppShell principal={principal} title="Asset inventory" eyebrow="Manager / oversight">
       <UrlFilterForm>
-        <input aria-label="Search Assets" defaultValue={q} name="q" placeholder="Asset or Seller" />
+        <input
+          aria-label="Search Assets"
+          autoComplete="off"
+          defaultValue={q}
+          list="manager-asset-query-suggestions"
+          maxLength={120}
+          name="q"
+          placeholder="Asset or Seller"
+        />
         <select aria-label="Asset category" defaultValue={category ?? ''} name="category">
           <option value="">All categories</option>
           {ASSET_CATEGORIES.map((value) => (
@@ -58,10 +70,14 @@ export default async function ManagerAssetsPage({
         </select>
         <input
           aria-label="Asset country"
+          autoCapitalize="characters"
+          autoComplete="off"
           defaultValue={country ?? ''}
+          list="manager-asset-country-suggestions"
           maxLength={2}
           name="country"
           placeholder="Country code"
+          pattern="[A-Za-z]{2}"
         />
         <select aria-label="Seller status" defaultValue={sellerStatus ?? ''} name="sellerStatus">
           <option value="">All Seller statuses</option>
@@ -70,6 +86,16 @@ export default async function ManagerAssetsPage({
           ))}
         </select>
         <button className="button primary">Search</button>
+        <datalist id="manager-asset-query-suggestions">
+          {querySuggestions.map((value) => (
+            <option key={value} value={value} />
+          ))}
+        </datalist>
+        <datalist id="manager-asset-country-suggestions">
+          {countrySuggestions.map((value) => (
+            <option key={value} value={value} />
+          ))}
+        </datalist>
       </UrlFilterForm>
       {data.assets.length > 0 && (
         <div className="table-wrap record-table">

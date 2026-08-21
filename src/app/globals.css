@@ -17,6 +17,7 @@ body {
   margin: 0;
   background: var(--canvas);
   color: var(--ink);
+  font-size: 17px;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 button,
@@ -33,12 +34,17 @@ textarea[aria-invalid='true'] {
 }
 .field-error {
   color: var(--danger);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.4;
 }
 button {
   cursor: pointer;
+}
+button,
+a,
+summary {
+  touch-action: manipulation;
 }
 button:disabled {
   cursor: wait;
@@ -63,7 +69,7 @@ button:disabled {
 }
 .brand {
   color: #fff;
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 800;
   text-decoration: none;
   letter-spacing: -0.06em;
@@ -74,7 +80,7 @@ button:disabled {
 .role-label,
 .eyebrow {
   color: #6c96ff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.15em;
@@ -89,7 +95,7 @@ button:disabled {
   padding: 11px 12px;
   border-radius: 9px;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 15px;
 }
 .sidebar nav a:hover,
 .switch-link:hover {
@@ -112,7 +118,7 @@ button:disabled {
   background: transparent;
   color: #fecaca;
   text-align: left;
-  font-size: 13px;
+  font-size: 14px;
 }
 .reset-link:hover {
   border-color: #fca5a5;
@@ -120,7 +126,7 @@ button:disabled {
 }
 .session-error {
   color: #fecaca;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.4;
 }
 .content {
@@ -133,14 +139,16 @@ button:disabled {
 }
 h1 {
   margin: 8px 0 18px;
-  font-size: clamp(32px, 5vw, 58px);
+  font-size: clamp(38px, 5vw, 64px);
   line-height: 1;
   letter-spacing: -0.055em;
+  text-wrap: balance;
 }
 h2 {
   margin: 10px 0;
-  font-size: 20px;
+  font-size: 22px;
   letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 p {
   line-height: 1.65;
@@ -148,7 +156,7 @@ p {
 .lead {
   max-width: 720px;
   color: var(--muted);
-  font-size: 17px;
+  font-size: 19px;
 }
 .stat-grid,
 .action-grid,
@@ -204,7 +212,7 @@ p {
 .action-card span {
   color: var(--primary);
   font-weight: 800;
-  font-size: 12px;
+  font-size: 13px;
 }
 .card-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -230,7 +238,7 @@ p {
   border-radius: 999px;
   background: #eaf0ff;
   color: #2454c4;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -246,7 +254,7 @@ p {
   border-radius: 10px;
   background: #effaf5;
   color: #176f4d;
-  font-size: 12px;
+  font-size: 14px;
 }
 .match.prominent {
   margin: 22px 0;
@@ -270,6 +278,7 @@ textarea {
   padding: 11px 12px;
   background: #fff;
   color: var(--ink);
+  font-size: 16px;
 }
 textarea {
   min-height: 110px;
@@ -311,6 +320,7 @@ textarea {
   border: 0;
   border-radius: 9px;
   padding: 11px 16px;
+  font-size: 16px;
   font-weight: 750;
   white-space: nowrap;
 }
@@ -320,7 +330,7 @@ textarea {
 }
 .button.small {
   padding: 7px 10px;
-  font-size: 12px;
+  font-size: 14px;
 }
 .form-card {
   max-width: 850px;
@@ -332,7 +342,7 @@ textarea {
 .inline-form {
   display: grid;
   gap: 7px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
 }
 .form-grid {
@@ -346,7 +356,7 @@ textarea {
 .notice {
   padding: 10px 12px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .notice.success {
   color: var(--success);
@@ -362,7 +372,7 @@ textarea {
   padding: 14px 16px;
   background: #fff9e8;
   color: #76520a;
-  font-size: 13px;
+  font-size: 14px;
 }
 .smart-warnings ul {
   margin: 8px 0 0;
@@ -403,7 +413,7 @@ table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 14px;
+  font-size: 15px;
 }
 th,
 td {
@@ -413,7 +423,7 @@ td {
 }
 th {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -479,7 +489,7 @@ td small {
 .moderation-form label {
   display: grid;
   gap: 7px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
 }
 .dialog-actions {
@@ -501,6 +511,45 @@ td small {
 .detail-card {
   max-width: 850px;
   margin-top: 28px;
+}
+details > summary {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 750;
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details > summary::before {
+  content: '▶';
+  color: var(--primary);
+  font-size: 12px;
+  transition: transform 0.16s ease;
+}
+details[open] > summary::before {
+  transform: rotate(90deg);
+}
+details > summary:hover {
+  background: #eef3fb;
+  color: var(--primary);
+}
+.market-card > details {
+  margin-top: auto;
+}
+.market-card > details > summary {
+  margin: 8px 0 0;
+  border-top: 1px solid var(--border);
+}
+.detail-card > details > summary {
+  margin-top: 18px;
+  background: #f8fafc;
 }
 .highlight-row {
   display: flex;
@@ -532,7 +581,7 @@ td small {
   gap: 14px;
   margin-top: 28px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
 }
 .pagination > :last-child {
   justify-self: end;
@@ -659,7 +708,7 @@ td small {
   .record-table td::before {
     content: attr(data-label);
     color: var(--muted);
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.07em;
