@@ -5,15 +5,25 @@ import { type ReactNode, useEffect, useRef } from 'react';
 
 export function UrlFilterForm({ children }: { children: ReactNode }) {
   const form = useRef<HTMLFormElement>(null);
+  const editVersion = useRef(0);
   const signature = useSearchParams().toString();
 
   useEffect(() => {
-    const timer = window.setTimeout(() => form.current?.reset(), 0);
+    const version = editVersion.current;
+    const timer = window.setTimeout(() => {
+      if (editVersion.current === version) form.current?.reset();
+    }, 0);
     return () => window.clearTimeout(timer);
-  }, [children, signature]);
+  }, [signature]);
 
   return (
-    <form className="search-bar" ref={form}>
+    <form
+      className="search-bar"
+      onChangeCapture={() => {
+        editVersion.current += 1;
+      }}
+      ref={form}
+    >
       {children}
     </form>
   );

@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UrlFilterForm } from './url-filter-form';
 
@@ -14,6 +14,21 @@ describe('UrlFilterForm', () => {
   });
 
   afterEach(cleanup);
+
+  it('preserves edits made immediately after the form first mounts', async () => {
+    render(
+      <UrlFilterForm>
+        <input aria-label="Query" defaultValue="" name="q" />
+      </UrlFilterForm>,
+    );
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Query' }), {
+      target: { value: 'Acceptance R2' },
+    });
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
+
+    expect(screen.getByRole('textbox', { name: 'Query' })).toHaveValue('Acceptance R2');
+  });
 
   it('repairs native form restoration using the latest server defaults', async () => {
     const view = render(
