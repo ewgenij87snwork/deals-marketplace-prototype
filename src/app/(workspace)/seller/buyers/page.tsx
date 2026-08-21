@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
-import type { MatchResult } from '@/domain/matching';
 import { PageHeader } from '@/components/app-shell';
-import { ContactForm } from '@/components/marketplace-forms';
+import { BuyerMatchGrid } from '@/components/buyer-match-card';
 import { UrlFilterForm } from '@/components/url-filter-form';
 import { participantQuerySchema } from '@/domain/validation';
 import { requirePageAccess } from '@/server/policy/page-access';
@@ -10,27 +9,6 @@ import { listBuyers, listOwnAssets } from '@/server/queries/marketplace';
 const sellerBuyerQuerySchema = participantQuerySchema.pick({ q: true, country: true });
 const optionalQueryValue = (value: string | string[] | undefined) =>
   value === '' ? undefined : value;
-const matchTone = (score: number) =>
-  score >= 70 ? 'match-fit' : score > 0 ? 'match-partial' : 'match-gap';
-const matchDimensionLabel = (dimension: string) =>
-  dimension === 'business status' ? 'status' : dimension;
-
-function matchSummary(match: MatchResult) {
-  const matched = match.reasons
-    .filter((reason) => reason.outcome === 'match')
-    .map((reason) => matchDimensionLabel(reason.dimension));
-  const gaps = match.reasons
-    .filter((reason) => reason.outcome === 'gap')
-    .map((reason) => matchDimensionLabel(reason.dimension));
-  if (match.fitScore >= 70) return `Strong fit — ${matched.slice(0, 3).join(', ')} align.`;
-  if (match.fitScore > 0) {
-    return `Partial fit — ${matched.slice(0, 2).join(', ') || 'some criteria'} match; ${gaps
-      .slice(0, 2)
-      .join(', ')} need review.`;
-  }
-  return `No fit yet — ${gaps.slice(0, 3).join(', ') || 'key criteria'} do not match.`;
-}
-
 export default async function SellerBuyersPage({
   searchParams,
 }: {
@@ -61,7 +39,7 @@ export default async function SellerBuyersPage({
   return (
     <>
       <PageHeader title="Find Buyers" eyebrow="Seller / matching" />
-      <UrlFilterForm>
+      <UrlFilterForm className="search-bar buyer-matching-search-bar">
         <input
           aria-label="Search Buyers"
           autoComplete="off"
@@ -92,7 +70,6 @@ export default async function SellerBuyersPage({
           placeholder="Buyer country"
           pattern="[A-Za-z]{2}"
         />
-        <button className="button primary">Apply filters</button>
         <datalist id="buyer-query-suggestions">
           {querySuggestions.map((value) => (
             <option key={value} value={value} />
@@ -105,35 +82,18 @@ export default async function SellerBuyersPage({
         </datalist>
       </UrlFilterForm>
       {data.selectedAsset && (
-        <p className="notice success">
+        <p aria-live="polite" className="notice match-context">
           Matching Buyers against <strong>{data.selectedAsset.title}</strong>. Scores use budget,
           geography, category, status, licence, and team-size criteria from each Buyer profile.
         </p>
       )}
-      <div className="card-grid matching-card-grid">
-        {data.buyers.map((buyer) => (
-          <article className="market-card" key={buyer.id}>
-            <span className="tag">Buyer · {buyer.countryCode}</span>
-            <h2>{buyer.organization}</h2>
-            <p>{buyer.thesis}</p>
-            {buyer.match && (
-              <div className={`match ${matchTone(buyer.match.fitScore)}`}>
-                <strong>
-                  {buyer.match.fitScore}% Match
-                  <span className="method-badge" title="Deterministic rules; no live AI is used.">
-                    Rule-based
-                  </span>
-                </strong>
-                <span className="match-summary">{matchSummary(buyer.match)}</span>
-              </div>
-            )}
-            <details>
-              <summary>Contact Buyer</summary>
-              <ContactForm recipientId={buyer.id} assetId={data.selectedAsset?.id} />
-            </details>
-          </article>
-        ))}
+      <div aria-live="polite" className="results-toolbar">
+        <span>
+          <strong>{data.buyers.length}</strong> active Buyers
+        </span>
+        <span className="results-sort">Sorted by best fit</span>
       </div>
+      <BuyerMatchGrid assetId={data.selectedAsset?.id} buyers={data.buyers} />
     </>
   );
 }

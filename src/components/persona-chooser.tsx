@@ -42,6 +42,7 @@ export function PersonaChooser() {
         {roles.map(([value, title, description]) => (
           <form
             action={choose}
+            aria-busy={pendingRole === value}
             className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
             key={value}
           >
@@ -50,8 +51,17 @@ export function PersonaChooser() {
             <p className="mt-2 min-h-20 text-sm leading-6 text-slate-600">{description}</p>
             <button
               className="mt-6 min-h-11 w-full rounded-xl bg-blue-600 px-4 font-medium text-white hover:bg-blue-700"
-              disabled={pendingRole !== null}
+              disabled={pendingRole !== null && pendingRole !== value}
+              onClick={(event) => {
+                if (pendingRole !== null) {
+                  event.preventDefault();
+                  return;
+                }
+                setPendingRole(value);
+                setError(null);
+              }}
             >
+              {pendingRole === value && <span aria-hidden="true" className="button-spinner" />}
               {pendingRole === value ? 'Preparing workspace…' : `Continue as ${title}`}
             </button>
           </form>

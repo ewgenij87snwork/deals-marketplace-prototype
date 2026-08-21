@@ -33,24 +33,29 @@ export async function provisionDemoWorkspace() {
       const workspace = await tx.demoWorkspace.create({
         data: { expiresAt: addHours(now, 24) },
       });
-      const ids = new Map<string, string>();
-
-      for (const user of demoUsers) {
-        const created = await tx.user.create({
-          data: {
-            workspaceId: workspace.id,
-            role: user.role,
-            status: 'ACTIVE',
-            name: user.name,
-            organization: user.organization,
-            email: user.email,
-            normalizedEmail: normalize(user.email),
-            countryCode: user.countryCode,
-            profileSummary: user.profileSummary,
-          },
-        });
-        ids.set(user.key, created.id);
-      }
+      await tx.user.createMany({
+        data: demoUsers.map((user) => ({
+          workspaceId: workspace.id,
+          role: user.role,
+          status: 'ACTIVE' as const,
+          name: user.name,
+          organization: user.organization,
+          email: user.email,
+          normalizedEmail: normalize(user.email),
+          countryCode: user.countryCode,
+          profileSummary: user.profileSummary,
+        })),
+      });
+      const createdUsers = await tx.user.findMany({
+        where: { workspaceId: workspace.id },
+        select: { id: true, email: true },
+      });
+      const ids = new Map(
+        demoUsers.map((user) => [
+          user.key,
+          createdUsers.find((created) => created.email === user.email)?.id,
+        ]),
+      );
 
       await tx.buyerProfile.createMany({
         data: buyerProfiles.map((profile) => ({

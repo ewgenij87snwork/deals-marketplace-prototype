@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 type UrlFilterFormProps = {
   children: ReactNode;
@@ -16,6 +16,7 @@ export function UrlFilterForm({ children, className = 'search-bar' }: UrlFilterF
   const internalNavigationSerial = useRef(0);
   const internalNavigationSignatures = useRef(new Map<string, number>());
   const navigationTimer = useRef<number | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const signature = useSearchParams().toString();
@@ -28,7 +29,10 @@ export function UrlFilterForm({ children, className = 'search-bar' }: UrlFilterF
 
   function navigate(nextForm: HTMLFormElement) {
     clearNavigationTimer();
-    if (!nextForm.checkValidity()) return;
+    if (!nextForm.checkValidity()) {
+      setIsUpdating(false);
+      return;
+    }
 
     const query = new URLSearchParams();
     for (const [name, rawValue] of new FormData(nextForm)) {
@@ -38,15 +42,20 @@ export function UrlFilterForm({ children, className = 'search-bar' }: UrlFilterF
       query.append(name, name === 'country' ? value.toUpperCase() : value);
     }
     const nextSignature = query.toString();
-    if (nextSignature === signature) return;
+    if (nextSignature === signature) {
+      setIsUpdating(false);
+      return;
+    }
     const serial = (internalNavigationSerial.current += 1);
     internalNavigationSignatures.current.set(nextSignature, serial);
+    setIsUpdating(true);
     router.push(nextSignature ? `${pathname}?${nextSignature}` : pathname, { scroll: false });
   }
 
   function scheduleNavigation() {
     if (!form.current) return;
     clearNavigationTimer();
+    setIsUpdating(true);
     navigationTimer.current = window.setTimeout(
       () => form.current && navigate(form.current),
       TEXT_FILTER_DEBOUNCE_MS,
@@ -59,9 +68,11 @@ export function UrlFilterForm({ children, className = 'search-bar' }: UrlFilterF
       for (const [pendingSignature, serial] of internalNavigationSignatures.current) {
         if (serial <= observedSerial) internalNavigationSignatures.current.delete(pendingSignature);
       }
+      setIsUpdating(false);
       return;
     }
     internalNavigationSignatures.current.clear();
+    setIsUpdating(false);
     const version = editVersion.current;
     const timer = window.setTimeout(() => {
       if (editVersion.current === version) form.current?.reset();
@@ -78,7 +89,8 @@ export function UrlFilterForm({ children, className = 'search-bar' }: UrlFilterF
 
   return (
     <form
-      className={className}
+      aria-busy={isUpdating}
+      className={`${className}${isUpdating ? ' is-updating' : ''}`}
       onChangeCapture={() => {
         editVersion.current += 1;
         scheduleNavigation();
@@ -89,6 +101,14 @@ export function UrlFilterForm({ children, className = 'search-bar' }: UrlFilterF
       }}
       ref={form}
     >
+      <output
+        aria-hidden={!isUpdating}
+        aria-live={isUpdating ? 'polite' : 'off'}
+        className={`filter-feedback${isUpdating ? ' is-visible' : ''}`}
+      >
+        <span className="filter-feedback-dot" aria-hidden="true" />
+        Updating matches…
+      </output>
       {children}
     </form>
   );

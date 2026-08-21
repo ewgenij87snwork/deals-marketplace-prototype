@@ -561,7 +561,8 @@ export function BuyerProfileForm({ profile }: { profile: Record<string, unknown>
       </details>
       <SmartWarnings issues={warnings} />
       <Feedback state={state} />
-      <button className="button primary" disabled={pending || !canSave}>
+      <button aria-busy={pending} className="button primary" disabled={pending || !canSave}>
+        {pending && <span aria-hidden="true" className="button-spinner" />}
         {pending ? 'Saving…' : 'Save mandate'}
       </button>
     </form>
@@ -962,9 +963,11 @@ export function PublishAssetForm() {
       <Feedback state={state} />
       <button
         aria-describedby="publish-required-fields highlights-hint"
+        aria-busy={pending}
         className="button primary"
         disabled={pending || !canPublish}
       >
+        {pending && <span aria-hidden="true" className="button-spinner" />}
         {pending ? 'Publishing…' : 'Publish Asset'}
       </button>
     </form>
@@ -1092,7 +1095,8 @@ export function ContactForm({
         <FieldError field="message" state={state} />
       </label>
       <Feedback state={state} />
-      <button className="button primary" disabled={pending || !canSend}>
+      <button aria-busy={pending} className="button primary" disabled={pending || !canSend}>
+        {pending && <span aria-hidden="true" className="button-spinner" />}
         {pending ? 'Sending…' : 'Send inquiry'}
       </button>
     </form>
@@ -1240,7 +1244,8 @@ export function ModerationForm({
                     Cancel
                   </button>
                 </Dialog.Close>
-                <button className="button primary" disabled={pending}>
+                <button aria-busy={pending} className="button primary" disabled={pending}>
+                  {pending && <span aria-hidden="true" className="button-spinner" />}
                   {pending ? 'Applying…' : `Confirm ${label}`}
                 </button>
               </div>

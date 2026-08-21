@@ -224,18 +224,26 @@ export async function listBuyers(
     }),
     selectedAsset,
   ]);
+  const mappedBuyers = buyers.map((buyer) => ({
+    id: buyer.id,
+    name: buyer.name,
+    organization: buyer.organization,
+    countryCode: buyer.countryCode,
+    thesis: buyer.buyerProfile?.investmentThesis ?? buyer.profileSummary,
+    match:
+      matchingAsset && buyer.buyerProfile
+        ? calculateMatch(buyer.buyerProfile, matchingAsset)
+        : undefined,
+  }));
+  mappedBuyers.sort((left, right) => {
+    if (!matchingAsset) return left.organization.localeCompare(right.organization);
+    return (
+      (right.match?.fitScore ?? -1) - (left.match?.fitScore ?? -1) ||
+      left.organization.localeCompare(right.organization)
+    );
+  });
   return {
-    buyers: buyers.map((buyer) => ({
-      id: buyer.id,
-      name: buyer.name,
-      organization: buyer.organization,
-      countryCode: buyer.countryCode,
-      thesis: buyer.buyerProfile?.investmentThesis ?? buyer.profileSummary,
-      match:
-        matchingAsset && buyer.buyerProfile
-          ? calculateMatch(buyer.buyerProfile, matchingAsset)
-          : undefined,
-    })),
+    buyers: mappedBuyers,
     selectedAsset: matchingAsset,
   };
 }

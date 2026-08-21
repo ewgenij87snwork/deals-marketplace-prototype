@@ -29,7 +29,14 @@ export function ResetDemoButton() {
 
   return (
     <div className="session-controls">
-      <button className="reset-link" disabled={pending} onClick={reset} type="button">
+      <button
+        aria-busy={pending}
+        className="reset-link"
+        disabled={pending}
+        onClick={reset}
+        type="button"
+      >
+        {pending && <span aria-hidden="true" className="button-spinner button-spinner--dark" />}
         {pending ? 'Resetting…' : 'Reset demo workspace'}
       </button>
       {error && (
