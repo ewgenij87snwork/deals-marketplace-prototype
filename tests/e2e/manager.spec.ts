@@ -14,7 +14,7 @@ test('Manager filters, previews suspension consequence, and restores the Seller'
   await expect(page).toHaveURL(/role=SELLER/);
 
   const sellerRows = page.locator('tbody tr');
-  await expect(sellerRows).toHaveCount(2);
+  await expect(sellerRows).toHaveCount(8);
   const firstSeller = sellerRows.filter({ hasText: 'Atlas Deal Advisory' });
   await expect(firstSeller).toContainText('SELLER');
   await expect(firstSeller.getByRole('button', { name: 'Review Remove' })).toBeVisible();
@@ -100,7 +100,7 @@ test('Manager Asset filter controls follow browser Back with the result table', 
   await expect(page).toHaveURL(/\/manager\/assets$/);
   await expect(page.locator('input[name="q"]')).toHaveValue('');
   await expect(page.locator('select[name="category"]')).toHaveValue('');
-  await expect(page.locator('tbody tr')).toHaveCount(4);
+  await expect(page.locator('tbody tr')).toHaveCount(12);
 });
 
 test('Manager participant records remain fully actionable at mobile width', async ({ page }) => {

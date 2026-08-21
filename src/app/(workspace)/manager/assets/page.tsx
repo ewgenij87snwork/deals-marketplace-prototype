@@ -5,6 +5,7 @@ import { Pagination } from '@/components/pagination';
 import { UrlFilterForm } from '@/components/url-filter-form';
 import { ASSET_CATEGORIES, PARTICIPANT_STATUSES } from '@/domain/taxonomy';
 import { requirePageAccess } from '@/server/policy/page-access';
+import { optionalQueryValue } from '@/server/http/query-value';
 import { listManagerAssets } from '@/server/queries/marketplace';
 
 const managerAssetQuerySchema = z.object({
@@ -19,9 +20,6 @@ const managerAssetQuerySchema = z.object({
   sellerStatus: z.enum(PARTICIPANT_STATUSES).optional(),
   page: z.coerce.number().int().min(1).max(100).default(1),
 });
-
-const optionalQueryValue = (value: string | string[] | undefined) =>
-  value === '' ? undefined : value;
 
 export default async function ManagerAssetsPage({
   searchParams,

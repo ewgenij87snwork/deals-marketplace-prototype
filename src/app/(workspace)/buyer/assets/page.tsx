@@ -5,10 +5,8 @@ import { MarketplaceFilters } from '@/components/marketplace-filters';
 import { Pagination } from '@/components/pagination';
 import { assetQuerySchema } from '@/domain/validation';
 import { requirePageAccess } from '@/server/policy/page-access';
+import { optionalQueryValue } from '@/server/http/query-value';
 import { listAssets } from '@/server/queries/marketplace';
-
-const optionalQueryValue = (value: string | string[] | undefined) =>
-  value === '' ? undefined : value;
 
 export default async function BuyerAssetsPage({
   searchParams,

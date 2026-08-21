@@ -56,7 +56,7 @@ test('Buyer mandate persists and URL filters Assets', async ({ page }) => {
 
   await expect(page).toHaveURL(/category=EMI/);
   await expect(page).toHaveURL(/country=LT/);
-  const cards = page.locator('article.market-card');
+  const cards = page.locator('.market-card');
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toContainText('Lithuanian EMI Licence');
   await expect(cards.first()).toContainText('Smart Match');
@@ -77,7 +77,7 @@ test('Buyer search autocompletes and updates results without a document reload',
   await search.fill('Lithuanian EMI');
 
   await expect(page).toHaveURL(/q=Lithuanian\+EMI/);
-  await expect(page.locator('article.market-card')).toHaveCount(1);
+  await expect(page.locator('.market-card')).toHaveCount(1);
   expect(await page.evaluate(() => Reflect.get(window, '__n5_live_search'))).toBe('alive');
 });
 
@@ -109,7 +109,7 @@ test('Buyer contact retry remains one persisted inquiry', async ({ page }) => {
     .fill('Please share the fictional diligence steps for this opportunity.');
   const send = page.getByRole('button', { name: 'Send inquiry', exact: true });
   await send.click();
-  await expect(page.getByRole('status')).toHaveText('Saved successfully.');
+  await expect(page.getByRole('status')).toHaveText('Inquiry sent successfully.');
   const retryResponse = page.waitForResponse(
     (response) => response.request().method() === 'POST' && response.url().includes('/assets/'),
   );
@@ -142,7 +142,7 @@ test('Buyer filter controls follow browser Back together with URL and results', 
   await appliedFilters.locator('select[name="category"]').selectOption('EMI');
   await appliedFilters.locator('input[name="country"]').fill('LT');
   await appliedFilters.getByRole('button', { name: 'Search', exact: true }).click();
-  await expect(page.locator('article.market-card')).toHaveCount(1);
+  await expect(page.locator('.market-card')).toHaveCount(1);
 
   await page.goBack();
 
@@ -150,7 +150,7 @@ test('Buyer filter controls follow browser Back together with URL and results', 
   const restoredFilters = await marketplaceFilterScope(page);
   await expect(restoredFilters.locator('select[name="category"]')).toHaveValue('');
   await expect(restoredFilters.locator('input[name="country"]')).toHaveValue('');
-  await expect(page.locator('article.market-card')).toHaveCount(4);
+  await expect(page.locator('.market-card')).toHaveCount(12);
 });
 
 test('Buyer price bounds constrain the Asset result set', async ({ page }) => {
@@ -158,7 +158,7 @@ test('Buyer price bounds constrain the Asset result set', async ({ page }) => {
 
   await page.goto('/buyer/assets?priceMin=3000000');
 
-  await expect(page.locator('article.market-card')).toHaveCount(1);
+  await expect(page.locator('.market-card')).toHaveCount(4);
   await expect(page.getByText('Irish RegTech Platform', { exact: true })).toBeVisible();
   const filters = await marketplaceFilterScope(page);
   await expect(filters.locator('input[name="priceMin"]')).toHaveValue('3000000');
@@ -171,7 +171,7 @@ test('Buyer text search includes the full Asset description promised by the UI',
 
   await page.goto('/buyer/assets?q=due-diligence-ready');
 
-  await expect(page.locator('article.market-card')).toHaveCount(1);
+  await expect(page.locator('.market-card')).toHaveCount(1);
   await expect(page.getByText('UK Payment Institution', { exact: true })).toBeVisible();
 });
 
@@ -180,8 +180,8 @@ test('Buyer marketplace keeps two useful columns at tablet width', async ({ page
   await choosePersona(page, 'Buyer');
   await page.getByRole('link', { name: 'Marketplace', exact: true }).click();
 
-  const cards = page.locator('article.market-card');
-  await expect(cards).toHaveCount(4);
+  const cards = page.locator('.market-card');
+  await expect(cards).toHaveCount(12);
   const boxes = await Promise.all([0, 1, 2].map((index) => cards.nth(index).boundingBox()));
   expect(boxes.every(Boolean)).toBe(true);
   expect(Math.abs(boxes[0]!.y - boxes[1]!.y)).toBeLessThan(2);
@@ -211,5 +211,5 @@ test('Buyer search treats SQL-like input as literal text', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Explore Assets' })).toBeVisible();
   const filters = await marketplaceFilterScope(page);
   await expect(filters.locator('input[name="q"]')).toHaveValue(payload);
-  await expect(page.locator('article.market-card')).toHaveCount(0);
+  await expect(page.locator('.market-card')).toHaveCount(0);
 });

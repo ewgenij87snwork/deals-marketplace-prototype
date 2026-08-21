@@ -4,11 +4,10 @@ import { BuyerMatchGrid } from '@/components/buyer-match-card';
 import { UrlFilterForm } from '@/components/url-filter-form';
 import { participantQuerySchema } from '@/domain/validation';
 import { requirePageAccess } from '@/server/policy/page-access';
+import { optionalQueryValue } from '@/server/http/query-value';
 import { listBuyers, listOwnAssets } from '@/server/queries/marketplace';
 
 const sellerBuyerQuerySchema = participantQuerySchema.pick({ q: true, country: true });
-const optionalQueryValue = (value: string | string[] | undefined) =>
-  value === '' ? undefined : value;
 export default async function SellerBuyersPage({
   searchParams,
 }: {

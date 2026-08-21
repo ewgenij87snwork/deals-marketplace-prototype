@@ -3,6 +3,7 @@ import 'server-only';
 import { prisma } from '@/server/db/prisma';
 import { calculateMatch } from '@/domain/matching';
 import type { Principal } from '@/server/policy/authorization';
+import type { AssetCategory, BusinessStatus, ParticipantStatus } from '@/generated/prisma/enums';
 
 const pageSize = 12;
 
@@ -36,9 +37,9 @@ export async function listAssets(
   principal: Principal,
   params: {
     q?: string;
-    category?: string;
+    category?: AssetCategory;
     country?: string;
-    businessStatus?: string;
+    businessStatus?: BusinessStatus;
     priceMin?: number;
     priceMax?: number;
     page?: number;
@@ -51,9 +52,9 @@ export async function listAssets(
   };
   const where = {
     ...inventoryWhere,
-    ...(params.category ? { category: params.category as never } : {}),
+    ...(params.category ? { category: params.category } : {}),
     ...(params.country ? { countryCode: params.country.toUpperCase() } : {}),
-    ...(params.businessStatus ? { businessStatus: params.businessStatus as never } : {}),
+    ...(params.businessStatus ? { businessStatus: params.businessStatus } : {}),
     ...(params.priceMin !== undefined || params.priceMax !== undefined
       ? {
           askingPriceEur: {
@@ -253,7 +254,7 @@ export async function listParticipants(
   params: {
     q?: string;
     role?: 'BUYER' | 'SELLER';
-    status?: string;
+    status?: ParticipantStatus;
     country?: string;
     page?: number;
   } = {},
@@ -264,7 +265,7 @@ export async function listParticipants(
       { role: { not: 'PLATFORM_MANAGER' as const } },
       ...(params.role ? [{ role: params.role }] : []),
     ],
-    ...(params.status ? { status: params.status as never } : {}),
+    ...(params.status ? { status: params.status } : {}),
     ...(params.country ? { countryCode: params.country.toUpperCase() } : {}),
     ...(params.q
       ? {
@@ -302,8 +303,8 @@ export async function listManagerAssets(
   principal: Principal,
   params: {
     q?: string;
-    sellerStatus?: string;
-    category?: string;
+    sellerStatus?: ParticipantStatus;
+    category?: AssetCategory;
     country?: string;
     page?: number;
   } = {},
@@ -311,9 +312,9 @@ export async function listManagerAssets(
   const q = params.q?.trim() ?? '';
   const where = {
     workspaceId: principal.workspaceId,
-    ...(params.category ? { category: params.category as never } : {}),
+    ...(params.category ? { category: params.category } : {}),
     ...(params.country ? { countryCode: params.country.toUpperCase() } : {}),
-    ...(params.sellerStatus ? { seller: { status: params.sellerStatus as never } } : {}),
+    ...(params.sellerStatus ? { seller: { status: params.sellerStatus } } : {}),
     ...(q
       ? {
           OR: [

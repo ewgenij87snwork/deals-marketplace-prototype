@@ -6,6 +6,7 @@ import { Pagination } from '@/components/pagination';
 import { UrlFilterForm } from '@/components/url-filter-form';
 import { participantQuerySchema } from '@/domain/validation';
 import { requirePageAccess } from '@/server/policy/page-access';
+import { optionalQueryValue } from '@/server/http/query-value';
 import { listParticipants } from '@/server/queries/marketplace';
 
 const roles = ['BUYER', 'SELLER'] as const;
@@ -13,9 +14,6 @@ const statuses = ['ACTIVE', 'SUSPENDED', 'REMOVED'] as const;
 const managerParticipantQuerySchema = participantQuerySchema.extend({
   role: z.enum(roles).optional(),
 });
-
-const optionalQueryValue = (value: string | string[] | undefined) =>
-  value === '' ? undefined : value;
 
 export default async function ManagerParticipantsPage({
   searchParams,
