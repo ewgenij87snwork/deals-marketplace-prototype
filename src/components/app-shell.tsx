@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { Principal } from '@/server/policy/authorization';
+import { CreatorSignature } from '@/components/creator-signature';
 import { ResetDemoButton } from '@/components/reset-demo-button';
 
 export function AppShell({
@@ -46,10 +47,13 @@ export function AppShell({
             </Link>
           ))}
         </nav>
-        <Link href="/" className="switch-link">
-          Switch persona
-        </Link>
-        <ResetDemoButton />
+        <div className="sidebar-footer">
+          <CreatorSignature className="creator-signature--sidebar" />
+          <Link href="/" className="switch-link">
+            Switch persona
+          </Link>
+          <ResetDemoButton />
+        </div>
       </aside>
       <main className="content">
         <div className="content-inner">
@@ -57,6 +61,7 @@ export function AppShell({
           <h1>{title}</h1>
           {children}
         </div>
+        <CreatorSignature className="creator-signature--mobile" />
       </main>
     </div>
   );

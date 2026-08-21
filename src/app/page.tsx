@@ -1,4 +1,5 @@
 import { PersonaChooser } from '@/components/persona-chooser';
+import { CreatorSignature } from '@/components/creator-signature';
 
 const notices: Record<string, string> = {
   session: 'Your demo session expired or is no longer available.',
@@ -34,6 +35,7 @@ export default async function WelcomePage({
         </p>
       )}
       <PersonaChooser />
+      <CreatorSignature className="creator-signature--welcome" />
     </main>
   );
 }

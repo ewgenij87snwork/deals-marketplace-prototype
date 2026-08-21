@@ -103,8 +103,12 @@ button:disabled {
   color: #fff;
 }
 .switch-link {
-  margin-top: auto;
   border: 1px solid #33445e;
+}
+.sidebar-footer {
+  margin-top: auto;
+  display: grid;
+  gap: 12px;
 }
 .session-controls {
   display: grid;
@@ -128,6 +132,76 @@ button:disabled {
   color: #fecaca;
   font-size: 13px;
   line-height: 1.4;
+}
+.creator-signature {
+  display: flex;
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+  gap: 10px;
+  font-style: normal;
+}
+.creator-signature__name {
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.creator-signature__links {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+.creator-signature__link {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  color: var(--muted);
+  text-decoration: none;
+  transition:
+    background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.creator-signature__link:hover {
+  background: #e8eef8;
+  color: var(--primary);
+}
+.creator-signature__link:active {
+  transform: translateY(1px);
+}
+.creator-signature--sidebar {
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #33445e;
+}
+.creator-signature--sidebar .creator-signature__name {
+  color: #e6edf6;
+}
+.creator-signature--sidebar .creator-signature__link {
+  width: 36px;
+  height: 36px;
+  color: #9fb0c5;
+}
+.creator-signature--sidebar .creator-signature__links {
+  gap: 1px;
+}
+.creator-signature--sidebar .creator-signature__link:hover {
+  background: #1c2d47;
+  color: #fff;
+}
+.creator-signature--welcome {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.creator-signature--mobile {
+  display: none;
 }
 .content {
   flex: 1;
@@ -590,6 +664,20 @@ details > summary:hover {
   border: 1px solid var(--border);
   color: var(--ink);
   text-decoration: none;
+}
+@media (max-width: 1000px) {
+  .sidebar-footer {
+    margin-top: 0;
+  }
+  .creator-signature--sidebar {
+    display: none;
+  }
+  .creator-signature--mobile {
+    display: flex;
+    margin: 0 18px 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
 }
 @media (min-width: 601px) and (max-width: 1000px) {
   .app-shell {
