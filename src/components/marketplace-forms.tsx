@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   createContactAction,
   moderateParticipantAction,
+  previewModerationAction,
   publishAssetAction,
   updateBuyerProfileAction,
 } from '@/server/actions/marketplace';
@@ -99,8 +102,12 @@ export function BuyerProfileForm({ profile }: { profile: Record<string, unknown>
           />
         </label>
         <label>
-          Team size
+          Team size minimum
           <input name="minEmployees" type="number" defaultValue={Number(p.minEmployees ?? 0)} />
+        </label>
+        <label>
+          Team size maximum
+          <input name="maxEmployees" type="number" defaultValue={Number(p.maxEmployees ?? 0)} />
         </label>
       </div>
       <Feedback state={state} />
@@ -212,20 +219,29 @@ export function ContactForm({
 }) {
   const [state, setState] = useState<{ ok: boolean; message?: string } | null>(null);
   const [pending, setPending] = useState(false);
+  const idempotencyKey = useRef<string | null>(null);
   async function submit(form: FormData) {
     setPending(true);
+    idempotencyKey.current ??= crypto.randomUUID();
     const result = await createContactAction({
       recipientId,
       assetId,
       subject: form.get('subject'),
       message: form.get('message'),
-      idempotencyKey: crypto.randomUUID(),
+      idempotencyKey: idempotencyKey.current,
     });
     setState(result.ok ? { ok: true } : { ok: false, message: result.message });
     setPending(false);
   }
   return (
-    <form action={submit} className="form-card">
+    <form
+      action={submit}
+      className="form-card"
+      onChange={() => {
+        idempotencyKey.current = null;
+        setState(null);
+      }}
+    >
       <label>
         Subject
         <input name="subject" defaultValue="Interest in your opportunity" />
@@ -247,38 +263,110 @@ export function ContactForm({
 
 export function ModerationForm({
   targetUserId,
-  currentStatus,
+  action,
 }: {
   targetUserId: string;
-  currentStatus: string;
+  action: 'SUSPEND' | 'RESTORE' | 'REMOVE';
 }) {
+  const router = useRouter();
   const [state, setState] = useState<{ ok: boolean; message?: string } | null>(null);
   const [pending, setPending] = useState(false);
-  const action = currentStatus === 'SUSPENDED' ? 'RESTORE' : 'SUSPEND';
+  const [previewPending, setPreviewPending] = useState(false);
+  const [preview, setPreview] = useState<{
+    currentStatus: string;
+    affectedAssets: number;
+  } | null>(null);
+  const [open, setOpen] = useState(false);
+  const label = action === 'SUSPEND' ? 'Suspend' : action === 'RESTORE' ? 'Restore' : 'Remove';
+  const affectedAssets = preview?.affectedAssets ?? 0;
+  const assetLabel = affectedAssets === 1 ? 'Asset' : 'Assets';
+  const impact =
+    action === 'SUSPEND'
+      ? `${affectedAssets} ${assetLabel} will be hidden from Buyers. New contacts will be blocked until the participant is restored.`
+      : action === 'RESTORE'
+        ? `${affectedAssets} ${assetLabel} will become visible to Buyers again.`
+        : `${affectedAssets} ${assetLabel} will become unavailable. This is a terminal demo action.`;
+  async function review() {
+    setPreviewPending(true);
+    setState(null);
+    const result = await previewModerationAction({ targetUserId, action });
+    setPreviewPending(false);
+    if (!result.ok) {
+      setState({ ok: false, message: result.message });
+      return;
+    }
+    setPreview(result.data);
+    setOpen(true);
+  }
   async function submit(form: FormData) {
     setPending(true);
     const result = await moderateParticipantAction({
       targetUserId,
       action,
       reason: form.get('reason'),
+      expectedStatus: preview!.currentStatus,
+      expectedAffectedAssets: preview!.affectedAssets,
     });
-    setState(result.ok ? { ok: true } : { ok: false, message: result.message });
     setPending(false);
+    if (!result.ok) {
+      setState({ ok: false, message: result.message });
+      if (result.code === 'STALE_MODERATION_PREVIEW') {
+        setPreview(null);
+        setOpen(false);
+      }
+      return;
+    }
+    setState({ ok: true });
+    setOpen(false);
+    router.refresh();
   }
   return (
-    <form action={submit} className="inline-form">
-      <input
-        name="reason"
-        defaultValue={
-          action === 'SUSPEND'
-            ? 'Demo policy review required.'
-            : 'Review completed; restoring access.'
-        }
-      />
-      <button className="button small" disabled={pending}>
-        {pending ? '…' : action === 'SUSPEND' ? 'Suspend' : 'Restore'}
+    <Dialog.Root
+      onOpenChange={(nextOpen) => {
+        if (!pending) setOpen(nextOpen);
+      }}
+      open={open}
+    >
+      <button className="button small" disabled={previewPending} onClick={review} type="button">
+        {previewPending ? 'Reviewing…' : `Review ${label}`}
       </button>
-      <Feedback state={state} />
-    </form>
+      {!open && <Feedback state={state} />}
+      {preview && (
+        <Dialog.Portal>
+          <Dialog.Overlay className="dialog-overlay" />
+          <Dialog.Content aria-label={`${label} participant`} className="moderation-dialog">
+            <p className="eyebrow">Impact preview</p>
+            <Dialog.Title>{label} participant</Dialog.Title>
+            <Dialog.Description>{impact}</Dialog.Description>
+            <form action={submit} className="moderation-form">
+              <label>
+                Reason
+                <input
+                  name="reason"
+                  defaultValue={
+                    action === 'SUSPEND'
+                      ? 'Demo policy review required.'
+                      : action === 'RESTORE' && preview.currentStatus === 'SUSPENDED'
+                        ? 'Review completed; restoring access.'
+                        : 'Demo policy removal approved.'
+                  }
+                />
+              </label>
+              <Feedback state={state} />
+              <div className="dialog-actions">
+                <Dialog.Close asChild>
+                  <button className="button" disabled={pending} type="button">
+                    Cancel
+                  </button>
+                </Dialog.Close>
+                <button className="button primary" disabled={pending}>
+                  {pending ? 'Applying…' : `Confirm ${label}`}
+                </button>
+              </div>
+            </form>
+          </Dialog.Content>
+        </Dialog.Portal>
+      )}
+    </Dialog.Root>
   );
 }

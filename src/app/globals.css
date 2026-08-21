@@ -240,6 +240,13 @@ textarea {
   min-height: 110px;
   resize: vertical;
 }
+.search-bar {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(130px, 1fr)) auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 24px;
+}
 .button {
   border: 0;
   border-radius: 9px;
@@ -338,6 +345,52 @@ td small {
 .inline-form .notice {
   grid-column: 1/-1;
 }
+.moderation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgb(15 27 45 / 55%);
+}
+.moderation-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 51;
+  width: min(520px, 100%);
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 14px;
+  padding: 24px;
+  outline: none;
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(15 27 45 / 24%);
+}
+.moderation-dialog h2 {
+  margin: 4px 0 10px;
+}
+.moderation-form {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+.moderation-form label {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+}
 .stack {
   display: grid;
   gap: 14px;
@@ -401,6 +454,9 @@ td small {
     grid-template-columns: 1fr;
   }
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .search-bar {
     grid-template-columns: 1fr;
   }
   .form-grid .wide {

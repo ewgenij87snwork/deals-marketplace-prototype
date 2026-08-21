@@ -2,8 +2,9 @@
 
 > A fictional, reviewer-friendly M&A marketplace demonstrating Buyer, Seller, and Platform Manager flows in one persistent Next.js application.
 
-**Live application:** `{{LIVE_URL}}`  
-**Final commit:** `{{FINAL_SHA}}`
+**Live application:** [n5deal-marketplace-prototype-six.vercel.app](https://n5deal-marketplace-prototype-six.vercel.app)
+
+**Production branch:** `integration/n5deal-prototype` — the exact deployed SHA is exposed by [`/api/health`](https://n5deal-marketplace-prototype-six.vercel.app/api/health)
 
 ## Two-minute reviewer tour
 
@@ -62,15 +63,11 @@ Open `http://localhost:3002`.
 ## Verification
 
 ```bash
-pnpm lint
-pnpm format:check
-pnpm typecheck
-pnpm test
-pnpm build
+pnpm verify
 pnpm test:e2e
 ```
 
-Replace this section with exact final results before submission.
+`pnpm verify` is the consolidated lint, format, type, unit, production-build, and diff gate. The Playwright release suite exercises 12 real desktop/mobile scenarios across Buyer, Seller, and Platform Manager flows.
 
 ## Assumptions
 
@@ -89,7 +86,7 @@ Replace this section with exact final results before submission.
 - Seller suspension hides published Assets and blocks new Contact;
 - cross-workspace guessed IDs;
 - invalid URL filters;
-- distinct loading/empty/error/offline/unavailable states.
+- empty, error, and unavailable states.
 
 ## With more time
 
@@ -106,4 +103,8 @@ After review, set `DEMO_MODE_ENABLED=false` and redeploy, enable deployment prot
 
 ## Known limitations
 
-`{{KNOWN_LIMITATIONS}}`
+- Authentication is an intentionally signed, isolated demo workspace rather than real organization identity.
+- Demo workspaces expire after 24 hours and production creation is capped at 40 active workspaces.
+- Contact is persisted in-app; the prototype does not send email or realtime notifications.
+- The free hosting/database tiers can cold-start after inactivity and are not an availability SLA.
+- No real or confidential deal data should be entered.

@@ -125,6 +125,13 @@ export const moderationInputSchema = z.object({
   targetUserId: z.string().uuid(),
   action: z.enum(['SUSPEND', 'RESTORE', 'REMOVE']),
   reason: z.string().trim().min(12).max(500),
+  expectedStatus: z.enum(PARTICIPANT_STATUSES),
+  expectedAffectedAssets: z.number().int().min(0).max(100_000),
+});
+
+export const moderationPreviewInputSchema = moderationInputSchema.pick({
+  targetUserId: true,
+  action: true,
 });
 
 export type SmartIssue = {

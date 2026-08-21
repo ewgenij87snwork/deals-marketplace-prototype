@@ -97,7 +97,11 @@ export async function listAssets(
 
 export async function getAssetDetail(principal: Principal, assetId: string) {
   const asset = await prisma.asset.findFirst({
-    where: { id: assetId, workspaceId: principal.workspaceId },
+    where: {
+      id: assetId,
+      workspaceId: principal.workspaceId,
+      ...(principal.role === 'SELLER' ? { sellerId: principal.userId } : {}),
+    },
     select: {
       id: true,
       title: true,
@@ -114,7 +118,8 @@ export async function getAssetDetail(principal: Principal, assetId: string) {
       seller: { select: { id: true, name: true, organization: true, status: true } },
     },
   });
-  if (!asset || asset.seller.status !== 'ACTIVE') return null;
+  if (!asset || (principal.role !== 'PLATFORM_MANAGER' && asset.seller.status !== 'ACTIVE'))
+    return null;
   const profile =
     principal.role === 'BUYER'
       ? await prisma.buyerProfile.findUnique({
@@ -208,13 +213,12 @@ export async function listBuyers(
 
 export async function listParticipants(
   principal: Principal,
-  params: { q?: string; role?: string; status?: string; country?: string } = {},
+  params: { q?: string; role?: 'BUYER' | 'SELLER'; status?: string; country?: string } = {},
 ) {
   return prisma.user.findMany({
     where: {
       workspaceId: principal.workspaceId,
-      role: { not: 'PLATFORM_MANAGER' },
-      ...(params.role ? { role: params.role as never } : {}),
+      AND: [{ role: { not: 'PLATFORM_MANAGER' } }, ...(params.role ? [{ role: params.role }] : [])],
       ...(params.status ? { status: params.status as never } : {}),
       ...(params.country ? { countryCode: params.country.toUpperCase() } : {}),
       ...(params.q

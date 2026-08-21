@@ -9,11 +9,22 @@ import {
   buyerProfileInputSchema,
   contactInputSchema,
   moderationInputSchema,
+  moderationPreviewInputSchema,
   publishAssetInputSchema,
 } from '@/domain/validation';
 import type { ActionResult } from '@/domain/contracts/action-result';
+import type { ParticipantStatus } from '@/generated/prisma/enums';
 
 const normalize = (value: string) => value.trim().toLowerCase();
+function nextParticipantStatus(
+  currentStatus: ParticipantStatus,
+  action: 'SUSPEND' | 'RESTORE' | 'REMOVE',
+): ParticipantStatus {
+  if (action === 'SUSPEND' && currentStatus === 'ACTIVE') return 'SUSPENDED';
+  if (action === 'RESTORE' && currentStatus === 'SUSPENDED') return 'ACTIVE';
+  if (action === 'REMOVE' && currentStatus !== 'REMOVED') return 'REMOVED';
+  throw new AppPolicyError('VALIDATION_FAILED', 'This moderation transition is not available.');
+}
 
 export async function updateBuyerProfileAction(
   input: unknown,
@@ -73,57 +84,121 @@ export async function createContactAction(
     const value = contactInputSchema.parse(input);
     if (value.recipientId === principal.userId)
       throw new AppPolicyError('CONTACT_SELF', 'You cannot contact yourself.');
-    const existing = await prisma.contactRequest.findFirst({
-      where: {
-        workspaceId: principal.workspaceId,
-        senderId: principal.userId,
-        idempotencyKey: value.idempotencyKey,
-      },
-      select: { id: true },
-    });
-    if (existing) return { ok: true, data: { id: existing.id, duplicate: true } };
-    const target = await prisma.user.findFirst({
-      where: {
-        id: value.recipientId,
-        workspaceId: principal.workspaceId,
-        status: 'ACTIVE',
-        role: principal.role === 'BUYER' ? 'SELLER' : 'BUYER',
-      },
-      select: { id: true },
-    });
-    if (!target)
-      throw new AppPolicyError(
-        'CONTACT_TARGET_UNAVAILABLE',
-        'This participant is no longer available.',
-      );
-    let assetId = value.assetId;
-    if (assetId) {
-      const asset = await prisma.asset.findFirst({
+    const contact = await prisma.$transaction(async (tx) => {
+      const [firstUserId, secondUserId] = [principal.userId, value.recipientId].sort();
+      await tx.$queryRaw`
+        SELECT "id"
+        FROM "User"
+        WHERE "workspaceId" = ${principal.workspaceId}::uuid
+          AND "id" IN (${firstUserId}::uuid, ${secondUserId}::uuid)
+        ORDER BY "id"
+        FOR UPDATE
+      `;
+
+      const sender = await tx.user.findFirst({
         where: {
-          id: assetId,
+          id: principal.userId,
           workspaceId: principal.workspaceId,
-          ...(principal.role === 'SELLER' ? { sellerId: principal.userId } : {}),
-          seller: { status: 'ACTIVE' },
         },
-        select: { id: true, sellerId: true },
+        select: { id: true, role: true, status: true },
       });
-      if (!asset || (principal.role === 'BUYER' && asset.sellerId !== target.id))
-        throw new AppPolicyError('RESOURCE_NOT_FOUND', 'The selected Asset is not available.');
-      assetId = asset.id;
-    }
-    const contact = await prisma.contactRequest.create({
-      data: {
-        workspaceId: principal.workspaceId,
-        senderId: principal.userId,
-        recipientId: target.id,
-        assetId,
-        subject: value.subject,
-        message: value.message,
-        idempotencyKey: value.idempotencyKey,
-      },
+      if (!sender)
+        throw new AppPolicyError('AUTH_REQUIRED', 'The demo session is no longer valid.');
+      requireRole(
+        {
+          workspaceId: principal.workspaceId,
+          userId: sender.id,
+          role: sender.role,
+          status: sender.status,
+        },
+        'BUYER',
+        'SELLER',
+      );
+
+      const existing = await tx.contactRequest.findFirst({
+        where: {
+          workspaceId: principal.workspaceId,
+          senderId: sender.id,
+          idempotencyKey: value.idempotencyKey,
+        },
+        select: { id: true },
+      });
+      if (existing) return { id: existing.id, duplicate: true };
+
+      const target = await tx.user.findFirst({
+        where: {
+          id: value.recipientId,
+          workspaceId: principal.workspaceId,
+          status: 'ACTIVE',
+          role: sender.role === 'BUYER' ? 'SELLER' : 'BUYER',
+        },
+        select: { id: true },
+      });
+      if (!target)
+        throw new AppPolicyError(
+          'CONTACT_TARGET_UNAVAILABLE',
+          'This participant is no longer available.',
+        );
+
+      let assetId = value.assetId;
+      if (assetId) {
+        const asset = await tx.asset.findFirst({
+          where: {
+            id: assetId,
+            workspaceId: principal.workspaceId,
+            ...(sender.role === 'SELLER' ? { sellerId: sender.id } : {}),
+            seller: { status: 'ACTIVE' },
+          },
+          select: { id: true, sellerId: true },
+        });
+        if (!asset || (sender.role === 'BUYER' && asset.sellerId !== target.id))
+          throw new AppPolicyError('RESOURCE_NOT_FOUND', 'The selected Asset is not available.');
+        assetId = asset.id;
+      }
+
+      const created = await tx.contactRequest.create({
+        data: {
+          workspaceId: principal.workspaceId,
+          senderId: sender.id,
+          recipientId: target.id,
+          assetId,
+          subject: value.subject,
+          message: value.message,
+          idempotencyKey: value.idempotencyKey,
+        },
+      });
+      return { id: created.id, duplicate: false };
     });
     revalidatePath('/contacts');
-    return { ok: true, data: { id: contact.id, duplicate: false } };
+    return { ok: true, data: contact };
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+export async function previewModerationAction(
+  input: unknown,
+): Promise<ActionResult<{ currentStatus: string; affectedAssets: number }>> {
+  try {
+    const principal = await requirePrincipal();
+    requireRole(principal, 'PLATFORM_MANAGER');
+    const value = moderationPreviewInputSchema.parse(input);
+    if (value.targetUserId === principal.userId)
+      throw new AppPolicyError('ROLE_FORBIDDEN', 'A manager cannot moderate their own account.');
+    const target = await prisma.user.findFirst({
+      where: {
+        id: value.targetUserId,
+        workspaceId: principal.workspaceId,
+        role: { not: 'PLATFORM_MANAGER' },
+      },
+      select: { status: true, _count: { select: { assets: true } } },
+    });
+    if (!target) throw new AppPolicyError('RESOURCE_NOT_FOUND', 'Participant not found.');
+    nextParticipantStatus(target.status, value.action);
+    return {
+      ok: true,
+      data: { currentStatus: target.status, affectedAssets: target._count.assets },
+    };
   } catch (error) {
     return toActionError(error);
   }
@@ -138,23 +213,32 @@ export async function moderateParticipantAction(
     const value = moderationInputSchema.parse(input);
     if (value.targetUserId === principal.userId)
       throw new AppPolicyError('ROLE_FORBIDDEN', 'A manager cannot moderate their own account.');
-    const target = await prisma.user.findFirst({
-      where: {
-        id: value.targetUserId,
-        workspaceId: principal.workspaceId,
-        role: { not: 'PLATFORM_MANAGER' },
-      },
-      select: { id: true, status: true },
-    });
-    if (!target) throw new AppPolicyError('RESOURCE_NOT_FOUND', 'Participant not found.');
-    const nextStatus =
-      value.action === 'SUSPEND' ? 'SUSPENDED' : value.action === 'REMOVE' ? 'REMOVED' : 'ACTIVE';
-    if (target.status === nextStatus)
-      throw new AppPolicyError('VALIDATION_FAILED', 'This participant is already in that state.');
-    const affectedAssets = await prisma.asset.count({
-      where: { workspaceId: principal.workspaceId, sellerId: target.id },
-    });
     const action = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        SELECT "id"
+        FROM "User"
+        WHERE "workspaceId" = ${principal.workspaceId}::uuid
+          AND "id" = ${value.targetUserId}::uuid
+        FOR UPDATE
+      `;
+      const target = await tx.user.findFirst({
+        where: {
+          id: value.targetUserId,
+          workspaceId: principal.workspaceId,
+          role: { not: 'PLATFORM_MANAGER' },
+        },
+        select: { id: true, status: true },
+      });
+      if (!target) throw new AppPolicyError('RESOURCE_NOT_FOUND', 'Participant not found.');
+      const affectedAssets = await tx.asset.count({
+        where: { workspaceId: principal.workspaceId, sellerId: target.id },
+      });
+      if (target.status !== value.expectedStatus || affectedAssets !== value.expectedAffectedAssets)
+        throw new AppPolicyError(
+          'STALE_MODERATION_PREVIEW',
+          'Marketplace state changed. Review the updated impact before confirming again.',
+        );
+      const nextStatus = nextParticipantStatus(target.status, value.action);
       const updated = await tx.user.update({
         where: { id: target.id },
         data: { status: nextStatus },

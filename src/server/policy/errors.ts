@@ -8,6 +8,7 @@ export type AppErrorCode =
   | 'DUPLICATE_ASSET_TITLE'
   | 'CONTACT_SELF'
   | 'CONTACT_TARGET_UNAVAILABLE'
+  | 'STALE_MODERATION_PREVIEW'
   | 'DEMO_CAPACITY_REACHED';
 
 export class AppPolicyError extends Error {

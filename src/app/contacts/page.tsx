@@ -1,8 +1,10 @@
 import { AppShell } from '@/components/app-shell';
 import { requirePrincipal } from '@/server/session/signed-session';
 import { listContacts } from '@/server/queries/marketplace';
+import { requireRole } from '@/server/policy/authorization';
 export default async function ContactsPage() {
   const principal = await requirePrincipal();
+  requireRole(principal, 'BUYER', 'SELLER');
   const contacts = await listContacts(principal);
   return (
     <AppShell principal={principal} title="Inquiries" eyebrow="Marketplace / communication">

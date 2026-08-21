@@ -1,8 +1,79 @@
 import { test, expect } from '@playwright/test';
+import { choosePersona, cleanupWorkspace } from './helpers';
 
-test('Seller reviewer journey', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Continue as Seller' }).click();
-  await expect(page.getByRole('heading', { name: 'SELLER' })).toBeVisible();
-  // Integrator expands this into publish → Buyer filter/match → contact → refresh proof.
+test.afterEach(async ({ page }) => cleanupWorkspace(page));
+
+test('Seller publishes an Asset and uses it for Buyer matching and contact', async ({ page }) => {
+  await choosePersona(page, 'Seller');
+  await page.getByRole('link', { name: 'Publish Asset', exact: true }).first().click();
+  await expect(page).toHaveURL(/\/seller\/publish$/);
+
+  const title = 'Reviewer Baltic EMI';
+  await page.locator('input[name="title"]').fill(title);
+  await page.locator('select[name="category"]').selectOption('EMI');
+  await page.locator('input[name="countryCode"]').fill('LT');
+  await page.locator('input[name="askingPriceEur"]').fill('1250000');
+  await page.locator('select[name="businessStatus"]').selectOption('ACTIVE');
+  await page.locator('input[name="licenseType"]').fill('EMI');
+  await page.locator('input[name="regulator"]').fill('Bank of Lithuania');
+  await page.locator('input[name="employeeCount"]').fill('12');
+  await page
+    .locator('textarea[name="summary"]')
+    .fill('A fictional regulated EMI used for the reviewer journey and matching proof.');
+  await page
+    .locator('textarea[name="description"]')
+    .fill('This fictional listing verifies persistence, Seller matching, and contextual contact.');
+  await page.locator('input[name="highlights"]').fill('Regulated, EEA, operating team');
+  await page.getByRole('button', { name: 'Publish Asset', exact: true }).click();
+  await expect(page.getByRole('status')).toHaveText('Saved successfully.');
+
+  await page.getByRole('link', { name: 'My Assets', exact: true }).click();
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(title, { exact: true })).toBeVisible();
+
+  await page.getByRole('link', { name: 'Find Buyers', exact: true }).click();
+  await expect(page).toHaveURL(/\/seller\/buyers$/);
+  await page.locator('select[name="asset"]').selectOption({ label: title });
+  await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
+  await expect(page).toHaveURL(/asset=/);
+  await expect(page.locator('select[name="asset"] option:checked')).toHaveText(title);
+  await expect(page.getByText('Smart Match', { exact: false })).toHaveCount(3);
+
+  const firstBuyer = page.locator('article.market-card').first();
+  await firstBuyer.locator('summary').click();
+  const subject = 'Seller contextual inquiry';
+  await firstBuyer.locator('input[name="subject"]').fill(subject);
+  await firstBuyer.getByRole('button', { name: 'Send inquiry', exact: true }).click();
+  await expect(firstBuyer.getByRole('status')).toHaveText('Saved successfully.');
+  await page.getByRole('link', { name: 'Inquiries', exact: true }).click();
+  const contact = page.locator('article.contact-card').filter({ hasText: subject });
+  await expect(contact).toHaveCount(1);
+  await expect(contact).toContainText(title);
+});
+
+test("Seller cannot inspect another Seller's Asset by guessed URL", async ({ page }) => {
+  await choosePersona(page, 'Buyer');
+  await page.getByRole('link', { name: 'Marketplace', exact: true }).click();
+  const foreignCard = page
+    .locator('article.market-card')
+    .filter({ hasText: 'Lithuanian EMI Licence' });
+  const foreignAssetUrl = await foreignCard
+    .getByRole('link', { name: /Inspect opportunity/i })
+    .getAttribute('href');
+  expect(foreignAssetUrl).toBeTruthy();
+
+  await choosePersona(page, 'Seller');
+  await page.goto(foreignAssetUrl!);
+  await expect(page.getByRole('heading', { name: 'Not found', exact: true })).toBeVisible();
+});
+
+test('Seller canonicalizes malformed Buyer filters and Asset context', async ({ page }) => {
+  await choosePersona(page, 'Seller');
+  await page.goto(`/seller/buyers?q=${'x'.repeat(121)}&country=INVALID&asset=not-a-uuid`);
+
+  await expect(page).toHaveURL(/\/seller\/buyers$/);
+  await expect(page.locator('input[name="q"]')).toHaveValue('');
+  await expect(page.locator('input[name="country"]')).toHaveValue('');
+  await expect(page.locator('select[name="asset"]')).not.toHaveValue('');
 });
