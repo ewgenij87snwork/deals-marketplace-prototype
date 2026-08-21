@@ -1,64 +1,80 @@
 # N5Deal Marketplace Prototype
 
-> A fictional, reviewer-friendly M&A marketplace demonstrating Buyer, Seller, and Platform Manager flows in one persistent Next.js application.
+> A focused M&A marketplace prototype for discovering fit between acquisition mandates and assets — with explainable matching, persisted inquiries, and a manager moderation loop.
 
-**Live application:** [n5deal-marketplace-prototype-six.vercel.app](https://n5deal-marketplace-prototype-six.vercel.app)
+[![Live demo](https://img.shields.io/badge/Live_demo-open-0f62fe?style=flat-square)](https://n5deal-marketplace-prototype-six.vercel.app)
+[![Health](https://img.shields.io/badge/API-health-22a06b?style=flat-square)](https://n5deal-marketplace-prototype-six.vercel.app/api/health)
+[![Next.js](https://img.shields.io/badge/Next.js-16-111827?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-**Production branch:** `integration/n5deal-prototype` — the exact deployed SHA is exposed by [`/api/health`](https://n5deal-marketplace-prototype-six.vercel.app/api/health)
+**[Open the live prototype →](https://n5deal-marketplace-prototype-six.vercel.app)**
 
-## Two-minute reviewer tour
+![N5Deal marketplace flow](assets/readme/marketplace-storyboard.svg)
 
-1. Open the live application and continue as **Buyer**.
-2. Update the acquisition mandate, filter Assets, open one match explanation, and contact a Seller.
-3. Switch to **Seller**, publish an Asset, select it as context, filter Buyers, and contact one.
-4. Switch to **Platform Manager**, filter participants, preview the impact of suspension, suspend the Seller, and confirm the Seller's Assets disappear from the Buyer marketplace.
-5. Hard-refresh after mutations to verify persistence.
+Built first for a time-limited technical review; kept as a compact engineering portfolio case study. The fastest path is: open the demo, follow the tour, then inspect the architecture and source behind each decision.
 
-All people, companies, Assets, prices, and communications are fictional.
+## See the product in two minutes
 
-## Why this scope
-
-The assignment evaluates product interpretation and engineering decisions, not feature count. The prototype focuses on the central marketplace loop:
+The prototype is organized around one complete marketplace loop:
 
 ```text
-Buyer mandate ↔ Asset facts ↔ explainable fit ↔ persisted inquiry
-                              ↓
-                    participant moderation
+Buyer mandate  →  explainable asset fit  →  persisted inquiry
+Seller asset   →  buyer discovery       →  persisted inquiry
+                         ↓
+             manager moderation → marketplace state changes
 ```
 
-## Stack
+1. Continue as **Buyer**. Update the acquisition mandate, filter Assets, open a match explanation, and contact a Seller.
+2. Switch to **Seller**. Publish an Asset, use it as context, filter Buyers, and contact one.
+3. Switch to **Platform Manager**. Search participants, preview a suspension consequence, suspend a Seller, and confirm the Seller's Assets leave the Buyer marketplace.
+4. Refresh after mutations to see that the state is persisted.
 
-- Next.js App Router + TypeScript
-- Tailwind CSS + small shadcn/Radix primitives
-- Prisma + PostgreSQL
-- Vitest + Testing Library + Playwright
-- Vercel
+All people, companies, Assets, prices, and inquiries are fictional.
 
-## Architecture
+## What is implemented
 
-One Next.js application owns UI, server reads/mutations, policy, and persistence. PostgreSQL is the source of truth. A signed `httpOnly` cookie points to an isolated fictional workspace and active persona; every query is scoped by the server-resolved workspace/user/status.
+| Role             | Core flow                                                              | Product detail                                        |
+| ---------------- | ---------------------------------------------------------------------- | ----------------------------------------------------- |
+| Buyer            | Maintain an acquisition profile, browse/filter Assets, contact Sellers | Match score, confidence, and human-readable reasons   |
+| Seller           | Publish an Asset, browse/filter Buyers, contact Buyers                 | Asset validation and contextual contact               |
+| Platform Manager | Inspect participants and Assets, search/filter, suspend/restore        | Preview impact before moderation and auditable action |
 
-See [`docs/architecture.md`](docs/architecture.md).
+That means the reviewer can test the happy path and the uncomfortable edges: duplicate submissions, self-contact, stale sessions, wrong-role routes, malformed URL filters, suspended participants, cross-workspace IDs, empty states, recovery states, mobile layouts, and concurrent publication/workspace races.
 
-## Smart product features
+## Smart features without runtime AI risk
 
-- **Explainable Smart Match:** deterministic, tested fit + confidence + reasons for Buyer→Asset and Seller Asset→Buyer discovery.
-- **Smart Validation:** catches contradictory acquisition criteria and low-quality/incomplete Asset data.
+- **Explainable Smart Match** is deterministic and inspectable: the same buyer mandate and asset facts produce the same score, confidence, and reasons.
+- **Smart Validation** catches contradictory acquisition criteria and incomplete or low-quality Asset data before it reaches the marketplace.
+- The prototype deliberately avoids a runtime LLM dependency. This keeps reviewer-visible behavior reproducible and makes authorization and matching decisions easy to inspect.
 
-These features remain useful without an external AI provider. AI development tools and human judgment are documented in [`docs/ai-usage.md`](docs/ai-usage.md).
+## Architecture and key decisions
+
+One Next.js App Router application owns the UI, server actions/queries, policy checks, and persistence. PostgreSQL is the source of truth; Prisma provides the relational model and transactions.
+
+- A signed `httpOnly` cookie identifies an isolated demo workspace and active persona.
+- The server resolves the session, reloads the User, checks role/status/workspace, and scopes every read and mutation.
+- The relational core is intentionally small: `DemoWorkspace`, `User`, `BuyerProfile`, `Asset`, `ContactRequest`, and `ModerationAction`.
+- Search uses bounded relational filters and pagination. A dedicated search service is intentionally deferred until real volume requires it.
+- Suspension is soft and auditable; suspended Sellers' published Assets are excluded from Buyer discovery.
+
+**Why it matters:** the UI is easy to exercise, while the server boundary makes each result traceable to a session, policy check, query, or transaction. More detail: [`docs/architecture.md`](docs/architecture.md).
 
 ## Local launch
 
+Requirements: Node `24.x`, pnpm `11.17.0`, and a PostgreSQL database.
+
 ```bash
 corepack enable
-pnpm install
+pnpm install --frozen-lockfile
 cp .env.example .env
 pnpm db:generate
 pnpm db:deploy
 pnpm dev
 ```
 
-Open `http://localhost:3002`.
+Open [http://localhost:3002](http://localhost:3002).
+
+The server configuration expects these variable names: `DATABASE_URL`, `DIRECT_URL`, `SESSION_SECRET`, `DEMO_MODE_ENABLED`, `MAX_DEMO_WORKSPACES`, and `VERCEL_GIT_COMMIT_SHA`. Keep values local; never commit `.env` files.
 
 ## Verification
 
@@ -67,50 +83,38 @@ pnpm verify
 pnpm test:e2e
 ```
 
-`pnpm verify` is the consolidated project-policy, lint, format, type, unit/integration,
-production-build, and diff gate. The Playwright release suite exercises real desktop/mobile
-scenarios across Buyer, Seller, Platform Manager, recovery, security, and responsive states.
+The consolidated verification gate covers project/toolchain policy, lint, formatting, types, unit/integration tests, Prisma generation, production build, and whitespace checks. The Playwright suite covers the Buyer, Seller, Manager, recovery, security, creator-signature, and responsive journeys. Run the gates locally to reproduce the evidence; no unverified test counts are claimed here.
 
-## Assumptions
+## Assumptions and trade-offs
 
-- Demo personas are intentional prototype authentication, not production identity.
-- Contact is a persisted marketplace inquiry, not realtime chat/email.
-- Removal is soft and auditable.
+- Demo persona selection is intentionally prototype authentication, not production identity or invitations.
+- Contact is a persisted inquiry, not realtime chat, email delivery, or notifications.
 - Money is normalized to integer EUR.
-- No real/confidential deal data should be entered.
+- Removal is soft and auditable.
+- Demo workspaces are isolated and short-lived; the free hosting/database tiers are not an availability SLA.
+- No real or confidential deal data should be entered.
 
-## Edge cases handled
+## AI-assisted development, with ownership retained
 
-- duplicate Asset title;
-- duplicate Contact submission;
-- self-contact;
-- target suspended/removed between dialog open and submit;
-- Seller suspension hides published Assets and blocks new Contact;
-- cross-workspace guessed IDs;
-- invalid URL filters;
-- distinct zero-result/zero-inventory, loading, recoverable network, and unavailable states;
-- stale/missing sessions and wrong-role routes;
-- concurrent workspace capacity and duplicate-publication races.
+OpenAI Codex assisted with repository analysis, implementation, test authoring, debugging, and verification. The owner supplied the product brief, scope, infrastructure choices, and deployment access. AI suggestions were narrowed when they introduced unnecessary infrastructure or reduced inspectability; the shipped matching and validation path remains deterministic and reviewable.
+
+See [`docs/ai-usage.md`](docs/ai-usage.md).
 
 ## With more time
 
-1. real organization authentication and invitations;
-2. role/permission management;
-3. secure data-room and NDA workflow;
-4. richer messaging/notifications;
-5. normalized high-cardinality taxonomies and full-text search;
-6. optional multilingual UI and carefully bounded LLM assistance.
+1. Replace demo persona authentication with organization identity, invitations, and role administration.
+2. Add a secure data-room/NDA workflow and richer messaging/notifications.
+3. Add PostgreSQL full-text/trigram search after measuring real marketplace volume.
+4. Add optional multilingual UI and carefully bounded LLM assistance with explicit human review.
+5. Add production observability, rate limiting, retention controls, and a formal moderation policy.
 
-## Stop the public demo
+## Creator
 
-After review, set `DEMO_MODE_ENABLED=false` and redeploy, enable deployment protection, or remove the Vercel/database projects.
+Built by **Yevgeniy Sorokin**.
 
-## Known limitations
+[![GitHub](https://img.shields.io/badge/GitHub-ewgenij87snwork-111827?style=flat-square&logo=github&logoColor=white)](https://github.com/ewgenij87snwork)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Yevgeniy%20Sorokin-0a66c2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/yevgeniy-sorokin-829b7b18a/)
 
-- Authentication is an intentionally signed, isolated demo workspace rather than real organization identity.
-- Demo workspaces expire after 24 hours and production creation is capped at 40 active workspaces.
-- Contact is persisted in-app; the prototype does not send email or realtime notifications.
-- The free hosting/database tiers can cold-start after inactivity and are not an availability SLA.
-- The GitHub repository must be made public separately before assignment submission if the reviewer
-  is expected to access source without an invitation.
-- No real or confidential deal data should be entered.
+## After the review
+
+For a public demo, disable `DEMO_MODE_ENABLED`, enable deployment protection, or remove the Vercel/database projects after review.
