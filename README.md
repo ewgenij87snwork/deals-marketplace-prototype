@@ -2,6 +2,8 @@
 
 > A fictional, reviewer-friendly M&A marketplace demonstrating Buyer, Seller, and Platform Manager flows in one persistent Next.js application.
 
+Live demo: [deals-marketplace-prototype.vercel.app](https://deals-marketplace-prototype.vercel.app)
+
 ## Two-minute reviewer tour
 
 1. Open the live application and continue as **Buyer**.

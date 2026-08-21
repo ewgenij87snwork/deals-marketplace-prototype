@@ -32,6 +32,8 @@ test('Buyer mandate persists and URL filters Assets', async ({ page }) => {
   await page.locator('input[name="targetBusinessStatuses"]').fill('LICENSE_ONLY');
   await page.locator('input[name="minEmployees"]').fill('1');
   await page.locator('input[name="maxEmployees"]').fill('10');
+  await targetCriteria.locator('summary').click();
+  await expect(targetCriteria).not.toHaveAttribute('open', '');
   await page.getByRole('button', { name: 'Save mandate', exact: true }).click();
   await expect(page.getByRole('status')).toHaveText('Saved successfully.');
 
