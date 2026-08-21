@@ -7,7 +7,7 @@ import { parseSessionToken, setDemoSession } from '@/server/session/signed-sessi
 import { cookies } from 'next/headers';
 import { provisionDemoWorkspace } from './provision-workspace';
 
-const COOKIE = 'n5deal_demo';
+const COOKIE = 'deals_demo';
 
 async function findPersona(workspaceId: string, role: UserRole) {
   return prisma.user.findFirst({

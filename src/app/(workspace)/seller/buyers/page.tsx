@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { AppShell } from '@/components/app-shell';
+import { PageHeader } from '@/components/app-shell';
 import { ContactForm } from '@/components/marketplace-forms';
 import { UrlFilterForm } from '@/components/url-filter-form';
 import { participantQuerySchema } from '@/domain/validation';
@@ -38,7 +38,8 @@ export default async function SellerBuyersPage({
   const countrySuggestions = [...new Set(data.buyers.map((buyer) => buyer.countryCode))].sort();
   const querySuggestions = [...new Set(data.buyers.map((buyer) => buyer.organization))].sort();
   return (
-    <AppShell principal={principal} title="Find Buyers" eyebrow="Seller / matching">
+    <>
+      <PageHeader title="Find Buyers" eyebrow="Seller / matching" />
       <UrlFilterForm>
         <input
           aria-label="Search Buyers"
@@ -85,7 +86,7 @@ export default async function SellerBuyersPage({
       {data.selectedAsset && (
         <p className="notice success">Matching Buyers against {data.selectedAsset.title}.</p>
       )}
-      <div className="card-grid">
+      <div className="card-grid matching-card-grid">
         {data.buyers.map((buyer) => (
           <article className="market-card" key={buyer.id}>
             <span className="tag">Buyer · {buyer.countryCode}</span>
@@ -93,17 +94,22 @@ export default async function SellerBuyersPage({
             <p>{buyer.thesis}</p>
             {buyer.match && (
               <div className="match">
-                <strong>{buyer.match.fitScore}% Smart Match</strong>
+                <strong>
+                  {buyer.match.fitScore}% Smart Match
+                  <span className="method-badge" title="Deterministic rules; no live AI is used.">
+                    Rule-based
+                  </span>
+                </strong>
                 <span>{buyer.match.reasons[0]?.label}</span>
               </div>
             )}
-            <details>
+            <details name="buyer-contact">
               <summary>Contact Buyer</summary>
               <ContactForm recipientId={buyer.id} assetId={data.selectedAsset?.id} />
             </details>
           </article>
         ))}
       </div>
-    </AppShell>
+    </>
   );
 }

@@ -1,19 +1,10 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { Principal } from '@/server/policy/authorization';
+import { CreatorSignature } from '@/components/creator-signature';
 import { ResetDemoButton } from '@/components/reset-demo-button';
 
-export function AppShell({
-  principal,
-  title,
-  eyebrow,
-  children,
-}: {
-  principal: Principal;
-  title: string;
-  eyebrow?: string;
-  children: ReactNode;
-}) {
+export function AppShell({ principal, children }: { principal: Principal; children: ReactNode }) {
   const links =
     principal.role === 'BUYER'
       ? [
@@ -34,9 +25,12 @@ export function AppShell({
           ];
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
       <aside className="sidebar">
-        <Link href="/dashboard" className="brand">
-          N5<span>Deal</span>
+        <Link aria-label="Deals" href="/dashboard" className="brand">
+          Deal<span>s</span>
         </Link>
         <p className="role-label">{principal.role.replaceAll('_', ' ')}</p>
         <nav>
@@ -46,18 +40,33 @@ export function AppShell({
             </Link>
           ))}
         </nav>
-        <Link href="/" className="switch-link">
-          Switch persona
-        </Link>
-        <ResetDemoButton />
-      </aside>
-      <main className="content">
-        <div className="content-inner">
-          <p className="eyebrow">{eyebrow ?? 'N5Deal marketplace'}</p>
-          <h1>{title}</h1>
-          {children}
+        <div className="sidebar-footer">
+          <CreatorSignature className="creator-signature--sidebar" />
+          <Link href="/" className="switch-link">
+            Switch persona
+          </Link>
+          <ResetDemoButton />
         </div>
+      </aside>
+      <main className="content" id="main-content">
+        <div className="content-inner">{children}</div>
+        <CreatorSignature className="creator-signature--mobile" />
       </main>
     </div>
+  );
+}
+
+export function PageHeader({
+  title,
+  eyebrow = 'Deals marketplace',
+}: {
+  title: string;
+  eyebrow?: string;
+}) {
+  return (
+    <>
+      <p className="eyebrow">{eyebrow}</p>
+      <h1>{title}</h1>
+    </>
   );
 }

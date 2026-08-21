@@ -1,8 +1,8 @@
 export default function Loading() {
   return (
-    <main aria-busy="true" className="loading-state" role="status">
-      <span className="loading-mark" />
-      <p>Loading the isolated marketplace workspace…</p>
-    </main>
+    <div aria-live="polite" className="route-progress" role="status">
+      <span className="route-progress-bar" />
+      <span className="sr-only">Loading the next view…</span>
+    </div>
   );
 }

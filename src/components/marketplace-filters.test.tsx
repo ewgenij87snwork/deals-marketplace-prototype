@@ -68,6 +68,22 @@ describe('MarketplaceFilters', () => {
     expect(screen.getByRole('combobox', { name: 'Category' })).toHaveValue('EMI');
   });
 
+  it('explains and keeps an inverted price range out of URL navigation', async () => {
+    const user = userEvent.setup();
+    render(<MarketplaceFilters />);
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
+
+    const minimum = screen.getByRole('spinbutton', { name: 'Minimum price' });
+    const maximum = screen.getByRole('spinbutton', { name: 'Maximum price' });
+    await user.type(minimum, '2000000');
+    await user.type(maximum, '1000000');
+
+    expect(screen.getByText('Maximum price must be at least the minimum.')).toBeVisible();
+    expect(maximum).toHaveAttribute('aria-invalid', 'true');
+    await new Promise((resolve) => window.setTimeout(resolve, 350));
+    expect(navigation.push).not.toHaveBeenCalled();
+  });
+
   afterEach(() => {
     window.history.replaceState({}, '', '/');
     cleanup();

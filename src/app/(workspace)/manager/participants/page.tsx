@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { AppShell } from '@/components/app-shell';
+import { PageHeader } from '@/components/app-shell';
 import { ModerationForm } from '@/components/marketplace-forms';
 import { Pagination } from '@/components/pagination';
 import { UrlFilterForm } from '@/components/url-filter-form';
@@ -45,7 +45,8 @@ export default async function ManagerParticipantsPage({
     ...new Set(data.people.flatMap((person) => [person.name, person.organization])),
   ].sort();
   return (
-    <AppShell principal={principal} title="Participants" eyebrow="Manager / oversight">
+    <>
+      <PageHeader title="Participants" eyebrow="Manager / oversight" />
       <UrlFilterForm>
         <input
           aria-label="Search participants"
@@ -142,6 +143,6 @@ export default async function ManagerParticipantsPage({
         pathname="/manager/participants"
         total={data.total}
       />
-    </AppShell>
+    </>
   );
 }

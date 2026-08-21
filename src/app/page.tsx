@@ -1,4 +1,5 @@
 import { PersonaChooser } from '@/components/persona-chooser';
+import { CreatorSignature } from '@/components/creator-signature';
 
 const notices: Record<string, string> = {
   session: 'Your demo session expired or is no longer available.',
@@ -18,7 +19,7 @@ export default async function WelcomePage({
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-16">
       <div className="mb-10 max-w-3xl">
         <p className="mb-3 text-sm font-semibold uppercase tracking-[.18em] text-blue-700">
-          N5Deal · fictional reviewer demo
+          Deals · fictional reviewer demo
         </p>
         <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">
           A focused marketplace for M&amp;A opportunities.
@@ -34,6 +35,7 @@ export default async function WelcomePage({
         </p>
       )}
       <PersonaChooser />
+      <CreatorSignature className="creator-signature--welcome" />
     </main>
   );
 }

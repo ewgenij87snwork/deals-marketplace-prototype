@@ -1,11 +1,12 @@
-import { AppShell } from '@/components/app-shell';
+import { PageHeader } from '@/components/app-shell';
 import { requirePageAccess } from '@/server/policy/page-access';
 import { listContacts } from '@/server/queries/marketplace';
 export default async function ContactsPage() {
   const principal = await requirePageAccess('BUYER', 'SELLER');
   const contacts = await listContacts(principal);
   return (
-    <AppShell principal={principal} title="Inquiries" eyebrow="Marketplace / communication">
+    <>
+      <PageHeader title="Inquiries" eyebrow="Marketplace / communication" />
       <div className="stack">
         {contacts.map((contact) => (
           <article className="contact-card" key={contact.id}>
@@ -24,6 +25,6 @@ export default async function ContactsPage() {
         ))}
         {contacts.length === 0 && <div className="empty">No inquiries yet.</div>}
       </div>
-    </AppShell>
+    </>
   );
 }

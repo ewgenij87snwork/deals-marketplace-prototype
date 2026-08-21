@@ -1,5 +1,5 @@
 {
-  "name": "n5deal-marketplace-prototype",
+  "name": "deals-marketplace-prototype",
   "version": "0.1.0",
   "private": true,
   "description": "A lean full-stack M&A marketplace prototype for Buyer, Seller, and Platform Manager flows.",

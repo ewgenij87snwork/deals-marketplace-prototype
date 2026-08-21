@@ -5,7 +5,7 @@ const countryCode = z
   .string()
   .trim()
   .toUpperCase()
-  .regex(/^[A-Z]{2}$/);
+  .regex(/^[A-Z]{2}$/, 'Enter a two-letter country code, for example GB.');
 const uniqueStrings = z
   .array(z.string().trim().min(1).max(120))
   .max(20)
@@ -76,7 +76,7 @@ export const publishAssetInputSchema = z.object({
   licenseType: nullableText(120),
   regulator: nullableText(120),
   businessStatus: z.enum(BUSINESS_STATUSES),
-  askingPriceEur: z.coerce.number().int().min(0).max(1_000_000_000),
+  askingPriceEur: z.coerce.number().int().min(1).max(1_000_000_000),
   employeeCount: nullableInteger(100_000),
   highlights: uniqueStrings.pipe(z.array(z.string()).min(2).max(6)),
 });
@@ -143,14 +143,6 @@ export type SmartIssue = {
 
 export function smartBuyerWarnings(input: z.infer<typeof buyerProfileInputSchema>): SmartIssue[] {
   const issues: SmartIssue[] = [];
-  if (input.investmentThesis.length < 100) {
-    issues.push({
-      severity: 'suggestion',
-      code: 'THESIS_THIN',
-      field: 'investmentThesis',
-      message: 'Add geography, target type, and the main investment rationale.',
-    });
-  }
   if (input.budgetMinEur > 0 && input.budgetMaxEur / input.budgetMinEur > 20) {
     issues.push({
       severity: 'warning',
@@ -169,7 +161,7 @@ export function smartAssetWarnings(input: z.infer<typeof publishAssetInputSchema
       severity: 'suggestion',
       code: 'SUMMARY_THIN',
       field: 'summary',
-      message: 'Add concrete regulatory or commercial facts.',
+      message: `${input.summary.length}/80 recommended characters. Add a specific fact, such as licence, geography, customers, revenue, or operating model.`,
     });
   }
   if (input.businessStatus === 'ACTIVE' && (input.employeeCount ?? 0) === 0) {
@@ -177,7 +169,8 @@ export function smartAssetWarnings(input: z.infer<typeof publishAssetInputSchema
       severity: 'warning',
       code: 'ACTIVE_WITHOUT_TEAM',
       field: 'employeeCount',
-      message: 'Explain how an active operation works without a disclosed team.',
+      message:
+        'Employees is empty while Business status is ACTIVE. Add the current team size if known.',
     });
   }
   if (!input.licenseType && ['BANK', 'PAYMENT', 'EMI', 'CRYPTO'].includes(input.category)) {
@@ -185,7 +178,7 @@ export function smartAssetWarnings(input: z.infer<typeof publishAssetInputSchema
       severity: 'warning',
       code: 'LICENSE_MISSING',
       field: 'licenseType',
-      message: 'A regulated Asset should normally disclose its licence type.',
+      message: `Licence is empty for the ${input.category} category. Add the licence type if it applies.`,
     });
   }
   return issues;

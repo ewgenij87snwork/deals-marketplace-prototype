@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AppShell } from '@/components/app-shell';
+import { PageHeader } from '@/components/app-shell';
 import { requirePageAccess } from '@/server/policy/page-access';
 import {
   listAssets,
@@ -27,7 +27,8 @@ export default async function DashboardPage({
       ? (await listManagerAssets(principal)).total
       : (await listContacts(principal)).length;
   return (
-    <AppShell principal={principal} title="Your marketplace desk" eyebrow="Workspace overview">
+    <>
+      <PageHeader title="Your marketplace desk" eyebrow="Workspace overview" />
       {roleNotice && (
         <p className="notice error" role="status">
           That page is not available for the active persona.
@@ -97,6 +98,6 @@ export default async function DashboardPage({
           </>
         )}
       </div>
-    </AppShell>
+    </>
   );
 }

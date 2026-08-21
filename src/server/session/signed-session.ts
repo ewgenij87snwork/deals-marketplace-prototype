@@ -8,7 +8,7 @@ import { prisma } from '@/server/db/prisma';
 import type { Principal } from '@/server/policy/authorization';
 import { AppPolicyError } from '@/server/policy/errors';
 
-const COOKIE = 'n5deal_demo';
+const COOKIE = 'deals_demo';
 const payloadSchema = z.object({
   workspaceId: z.string().uuid(),
   activeUserId: z.string().uuid(),

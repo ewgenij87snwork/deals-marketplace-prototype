@@ -48,7 +48,7 @@ export const demoUsers = [
     key: 'manager',
     role: 'PLATFORM_MANAGER',
     name: 'Alex Morgan',
-    organization: 'N5Deal Demo',
+    organization: 'Deals Demo',
     email: 'manager@example.test',
     countryCode: 'GB',
     profileSummary: 'Marketplace quality and compliance operations.',

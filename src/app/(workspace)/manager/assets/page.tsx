@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { AppShell } from '@/components/app-shell';
+import { PageHeader } from '@/components/app-shell';
 import { Pagination } from '@/components/pagination';
 import { UrlFilterForm } from '@/components/url-filter-form';
 import { ASSET_CATEGORIES, PARTICIPANT_STATUSES } from '@/domain/taxonomy';
@@ -51,7 +51,8 @@ export default async function ManagerAssetsPage({
     ...new Set(data.assets.flatMap((asset) => [asset.title, asset.seller.organization])),
   ].sort();
   return (
-    <AppShell principal={principal} title="Asset inventory" eyebrow="Manager / oversight">
+    <>
+      <PageHeader title="Asset inventory" eyebrow="Manager / oversight" />
       <UrlFilterForm>
         <input
           aria-label="Search Assets"
@@ -144,6 +145,6 @@ export default async function ManagerAssetsPage({
         pathname="/manager/assets"
         total={data.total}
       />
-    </AppShell>
+    </>
   );
 }

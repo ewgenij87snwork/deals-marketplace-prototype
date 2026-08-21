@@ -13,6 +13,8 @@ const TEXT_FILTER_DEBOUNCE_MS = 300;
 export function UrlFilterForm({ children, className = 'search-bar' }: UrlFilterFormProps) {
   const form = useRef<HTMLFormElement>(null);
   const editVersion = useRef(0);
+  const internalNavigationSerial = useRef(0);
+  const internalNavigationSignatures = useRef(new Map<string, number>());
   const navigationTimer = useRef<number | null>(null);
   const pathname = usePathname();
   const router = useRouter();
@@ -37,6 +39,8 @@ export function UrlFilterForm({ children, className = 'search-bar' }: UrlFilterF
     }
     const nextSignature = query.toString();
     if (nextSignature === signature) return;
+    const serial = (internalNavigationSerial.current += 1);
+    internalNavigationSignatures.current.set(nextSignature, serial);
     router.push(nextSignature ? `${pathname}?${nextSignature}` : pathname, { scroll: false });
   }
 
@@ -50,6 +54,14 @@ export function UrlFilterForm({ children, className = 'search-bar' }: UrlFilterF
   }
 
   useEffect(() => {
+    const observedSerial = internalNavigationSignatures.current.get(signature);
+    if (observedSerial !== undefined) {
+      for (const [pendingSignature, serial] of internalNavigationSignatures.current) {
+        if (serial <= observedSerial) internalNavigationSignatures.current.delete(pendingSignature);
+      }
+      return;
+    }
+    internalNavigationSignatures.current.clear();
     const version = editVersion.current;
     const timer = window.setTimeout(() => {
       if (editVersion.current === version) form.current?.reset();

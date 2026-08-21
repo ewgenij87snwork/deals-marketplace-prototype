@@ -14,7 +14,7 @@ export async function choosePersona(page: Page, persona: Persona) {
 }
 
 export async function cleanupWorkspace(page: Page) {
-  const cookie = (await page.context().cookies()).find(({ name }) => name === 'n5deal_demo');
+  const cookie = (await page.context().cookies()).find(({ name }) => name === 'deals_demo');
   const [encodedPayload, encodedSignature] = cookie?.value.split('.') ?? [];
   if (!encodedPayload || !encodedSignature) return;
 
@@ -58,7 +58,7 @@ export async function cleanupWorkspace(page: Page) {
 }
 
 export async function deleteWorkspaceAssets(page: Page) {
-  const cookie = (await page.context().cookies()).find(({ name }) => name === 'n5deal_demo');
+  const cookie = (await page.context().cookies()).find(({ name }) => name === 'deals_demo');
   const [encodedPayload, encodedSignature] = cookie?.value.split('.') ?? [];
   if (!encodedPayload || !encodedSignature)
     throw new Error('An isolated demo session is required.');

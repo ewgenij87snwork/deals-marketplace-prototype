@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { AppShell } from '@/components/app-shell';
+import { PageHeader } from '@/components/app-shell';
 import { ContactForm } from '@/components/marketplace-forms';
 import { requirePageAccess } from '@/server/policy/page-access';
 import { getAssetDetail } from '@/server/queries/marketplace';
@@ -8,7 +8,8 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
   const asset = await getAssetDetail(principal, (await params).id);
   if (!asset) notFound();
   return (
-    <AppShell principal={principal} title={asset.title} eyebrow="Asset detail">
+    <>
+      <PageHeader title={asset.title} eyebrow="Asset detail" />
       <div className="detail-card">
         <div className="card-top">
           <span className="tag">
@@ -31,6 +32,9 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
           <div className="match prominent">
             <strong>
               {asset.match.fitScore}% Smart Match · {asset.match.confidence}% confidence
+              <span className="method-badge" title="Deterministic rules; no live AI is used.">
+                Rule-based
+              </span>
             </strong>
             {asset.match.reasons.map((reason) => (
               <span key={reason.dimension}>
@@ -46,6 +50,6 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
           </details>
         )}
       </div>
-    </AppShell>
+    </>
   );
 }

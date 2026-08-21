@@ -46,6 +46,24 @@ describe('marketplace validation', () => {
     });
   });
 
+  it('rejects a zero asking price for a published Asset', () => {
+    const result = publishAssetInputSchema.safeParse({
+      title: 'UK payment institution',
+      summary: 'A'.repeat(80),
+      description: 'B'.repeat(100),
+      category: 'PAYMENT',
+      countryCode: 'GB',
+      licenseType: 'FCA PI',
+      regulator: 'Financial Conduct Authority',
+      businessStatus: 'ACTIVE',
+      askingPriceEur: 0,
+      employeeCount: 12,
+      highlights: ['Fictional demo fact 1', 'Fictional demo fact 2'],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it('warns about an active regulated listing without team or licence detail', () => {
     const input = publishAssetInputSchema.parse({
       title: 'UK payment institution',
@@ -81,5 +99,21 @@ describe('marketplace validation', () => {
     });
 
     expect(smartBuyerWarnings(input).map((item) => item.code)).toContain('BUDGET_TOO_BROAD');
+  });
+
+  it('does not warn solely because a valid mandate rationale is concise', () => {
+    const input = buyerProfileInputSchema.parse({
+      investmentThesis: 'Acquire a licensed payment business with a proven operating model.',
+      budgetMinEur: 300_000,
+      budgetMaxEur: 2_000_000,
+      targetCountries: ['GB', 'LT'],
+      targetCategories: ['PAYMENT'],
+      targetLicenseTypes: ['EMI'],
+      targetBusinessStatuses: ['ACTIVE'],
+      minEmployees: 2,
+      maxEmployees: 25,
+    });
+
+    expect(smartBuyerWarnings(input)).toEqual([]);
   });
 });

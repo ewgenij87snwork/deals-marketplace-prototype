@@ -1,10 +1,6 @@
-# N5Deal Marketplace Prototype
+# Deals Marketplace Prototype
 
 > A fictional, reviewer-friendly M&A marketplace demonstrating Buyer, Seller, and Platform Manager flows in one persistent Next.js application.
-
-**Live application:** [n5deal-marketplace-prototype-six.vercel.app](https://n5deal-marketplace-prototype-six.vercel.app)
-
-**Production branch:** `integration/n5deal-prototype` — the exact deployed SHA is exposed by [`/api/health`](https://n5deal-marketplace-prototype-six.vercel.app/api/health)
 
 ## Two-minute reviewer tour
 

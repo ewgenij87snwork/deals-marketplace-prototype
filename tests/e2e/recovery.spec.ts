@@ -41,7 +41,7 @@ test('a participant suspended during an active session cannot keep using the das
   page,
 }) => {
   await choosePersona(page, 'Seller');
-  const sellerCookie = (await page.context().cookies()).find(({ name }) => name === 'n5deal_demo');
+  const sellerCookie = (await page.context().cookies()).find(({ name }) => name === 'deals_demo');
   expect(sellerCookie).toBeDefined();
 
   await choosePersona(page, 'Platform Manager');

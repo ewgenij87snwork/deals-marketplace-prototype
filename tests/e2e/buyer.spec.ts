@@ -68,6 +68,18 @@ test('Buyer search autocompletes and updates results without a document reload',
   expect(await page.evaluate(() => Reflect.get(window, '__n5_live_search'))).toBe('alive');
 });
 
+test('Buyer navigation keeps the workspace sidebar mounted', async ({ page }) => {
+  await choosePersona(page, 'Buyer');
+
+  await page.locator('.sidebar').evaluate((sidebar) => {
+    sidebar.setAttribute('data-navigation-probe', 'retained');
+  });
+  await page.getByRole('link', { name: 'Marketplace', exact: true }).click();
+
+  await expect(page).toHaveURL(/\/buyer\/assets$/);
+  await expect(page.locator('.sidebar')).toHaveAttribute('data-navigation-probe', 'retained');
+});
+
 test('Buyer contact retry remains one persisted inquiry', async ({ page }) => {
   await choosePersona(page, 'Buyer');
   await page.getByRole('link', { name: 'Marketplace', exact: true }).click();

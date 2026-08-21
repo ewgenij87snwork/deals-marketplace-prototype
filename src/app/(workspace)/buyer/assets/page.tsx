@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { AppShell } from '@/components/app-shell';
+import { PageHeader } from '@/components/app-shell';
 import { MarketplaceFilters } from '@/components/marketplace-filters';
 import { Pagination } from '@/components/pagination';
 import { assetQuerySchema } from '@/domain/validation';
@@ -42,7 +42,8 @@ export default async function BuyerAssetsPage({
     queries: [...new Set(data.assets.map((asset) => asset.title))].sort(),
   };
   return (
-    <AppShell principal={principal} title="Explore Assets" eyebrow="Buyer / marketplace">
+    <>
+      <PageHeader title="Explore Assets" eyebrow="Buyer / marketplace" />
       <MarketplaceFilters suggestions={suggestions} />
       <div className="card-grid">
         {data.assets.map((asset) => (
@@ -58,7 +59,12 @@ export default async function BuyerAssetsPage({
             </small>
             {asset.match && (
               <div className="match">
-                <strong>{asset.match.fitScore}% Smart Match</strong>
+                <strong>
+                  {asset.match.fitScore}% Smart Match
+                  <span className="method-badge" title="Deterministic rules; no live AI is used.">
+                    Rule-based
+                  </span>
+                </strong>
                 <span>{asset.match.reasons[0]?.label}</span>
               </div>
             )}
@@ -83,6 +89,6 @@ export default async function BuyerAssetsPage({
         pathname="/buyer/assets"
         total={data.total}
       />
-    </AppShell>
+    </>
   );
 }

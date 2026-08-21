@@ -1,4 +1,4 @@
-import { AppShell } from '@/components/app-shell';
+import { PageHeader } from '@/components/app-shell';
 import Link from 'next/link';
 import { requirePageAccess } from '@/server/policy/page-access';
 import { listOwnAssets } from '@/server/queries/marketplace';
@@ -6,7 +6,8 @@ export default async function SellerAssetsPage() {
   const principal = await requirePageAccess('SELLER');
   const assets = await listOwnAssets(principal);
   return (
-    <AppShell principal={principal} title="My Assets" eyebrow="Seller / inventory">
+    <>
+      <PageHeader title="My Assets" eyebrow="Seller / inventory" />
       <div className="card-grid">
         {assets.map((asset) => (
           <article className="market-card" key={asset.id}>
@@ -27,6 +28,6 @@ export default async function SellerAssetsPage() {
           </Link>
         </div>
       )}
-    </AppShell>
+    </>
   );
 }

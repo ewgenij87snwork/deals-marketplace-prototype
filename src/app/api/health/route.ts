@@ -12,7 +12,7 @@ export async function GET() {
       {
         status: 'ok',
         database: 'reachable',
-        service: 'n5deal-marketplace-prototype',
+        service: 'deals-marketplace-prototype',
         sha: env.VERCEL_GIT_COMMIT_SHA,
         time: new Date().toISOString(),
       },
@@ -23,7 +23,7 @@ export async function GET() {
       {
         status: 'degraded',
         database: 'unreachable',
-        service: 'n5deal-marketplace-prototype',
+        service: 'deals-marketplace-prototype',
         sha: env.VERCEL_GIT_COMMIT_SHA,
         time: new Date().toISOString(),
       },

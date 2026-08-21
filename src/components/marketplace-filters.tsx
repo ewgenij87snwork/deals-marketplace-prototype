@@ -2,7 +2,7 @@
 
 import * as Dialog from '@radix-ui/react-dialog';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ASSET_CATEGORIES, BUSINESS_STATUSES } from '@/domain/taxonomy';
 import { UrlFilterForm } from '@/components/url-filter-form';
 
@@ -40,6 +40,18 @@ function Fields({
   values: FilterValues;
   update: (field: keyof FilterValues, value: string) => void;
 }) {
+  const maximumPriceRef = useRef<HTMLInputElement>(null);
+  const priceRangeError =
+    values.priceMin !== '' &&
+    values.priceMax !== '' &&
+    Number(values.priceMax) < Number(values.priceMin)
+      ? 'Maximum price must be at least the minimum.'
+      : null;
+
+  useEffect(() => {
+    maximumPriceRef.current?.setCustomValidity(priceRangeError ?? '');
+  }, [priceRangeError]);
+
   return (
     <>
       <input
@@ -98,15 +110,23 @@ function Fields({
       />
       <input
         aria-label="Maximum price"
+        aria-describedby={priceRangeError ? 'price-range-error' : undefined}
+        aria-invalid={priceRangeError ? true : undefined}
         autoComplete="off"
         min={0}
         name="priceMax"
         onChange={(event) => update('priceMax', event.target.value)}
         placeholder="Max €"
+        ref={maximumPriceRef}
         type="number"
         value={values.priceMax}
       />
       <button className="button primary">Search</button>
+      {priceRangeError && (
+        <span className="filter-validation" id="price-range-error" role="status">
+          {priceRangeError}
+        </span>
+      )}
       <datalist id="asset-query-suggestions">
         {suggestions.queries.map((value) => (
           <option key={value} value={value} />

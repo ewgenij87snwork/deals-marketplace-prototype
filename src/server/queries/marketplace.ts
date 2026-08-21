@@ -73,7 +73,14 @@ export async function listAssets(
       : {}),
   };
   const page = params.page ?? 1;
-  const [total, inventoryTotal, assets] = await Promise.all([
+  const profile =
+    principal.role === 'BUYER'
+      ? prisma.buyerProfile.findUnique({
+          where: { userId: principal.userId },
+          select: buyerProfileSelect,
+        })
+      : Promise.resolve(null);
+  const [total, inventoryTotal, assets, buyerProfile] = await Promise.all([
     prisma.asset.count({ where }),
     prisma.asset.count({ where: inventoryWhere }),
     prisma.asset.findMany({
@@ -94,19 +101,13 @@ export async function listAssets(
         seller: { select: { id: true, organization: true, status: true } },
       },
     }),
+    profile,
   ]);
-  const profile =
-    principal.role === 'BUYER'
-      ? await prisma.buyerProfile.findUnique({
-          where: { userId: principal.userId },
-          select: buyerProfileSelect,
-        })
-      : null;
   return {
     assets: assets.map((asset) => ({
       ...asset,
       seller: { id: asset.seller.id, organization: asset.seller.organization },
-      match: profile ? calculateMatch(profile, asset) : undefined,
+      match: buyerProfile ? calculateMatch(buyerProfile, asset) : undefined,
     })),
     total,
     inventoryTotal,
@@ -116,38 +117,41 @@ export async function listAssets(
 }
 
 export async function getAssetDetail(principal: Principal, assetId: string) {
-  const asset = await prisma.asset.findFirst({
-    where: {
-      id: assetId,
-      workspaceId: principal.workspaceId,
-      ...(principal.role === 'SELLER' ? { sellerId: principal.userId } : {}),
-    },
-    select: {
-      id: true,
-      title: true,
-      summary: true,
-      description: true,
-      category: true,
-      countryCode: true,
-      licenseType: true,
-      regulator: true,
-      businessStatus: true,
-      askingPriceEur: true,
-      employeeCount: true,
-      highlights: true,
-      seller: { select: { id: true, name: true, organization: true, status: true } },
-    },
-  });
-  if (!asset || (principal.role !== 'PLATFORM_MANAGER' && asset.seller.status !== 'ACTIVE'))
-    return null;
   const profile =
     principal.role === 'BUYER'
-      ? await prisma.buyerProfile.findUnique({
+      ? prisma.buyerProfile.findUnique({
           where: { userId: principal.userId },
           select: buyerProfileSelect,
         })
-      : null;
-  return { ...asset, match: profile ? calculateMatch(profile, asset) : undefined };
+      : Promise.resolve(null);
+  const [asset, buyerProfile] = await Promise.all([
+    prisma.asset.findFirst({
+      where: {
+        id: assetId,
+        workspaceId: principal.workspaceId,
+        ...(principal.role === 'SELLER' ? { sellerId: principal.userId } : {}),
+      },
+      select: {
+        id: true,
+        title: true,
+        summary: true,
+        description: true,
+        category: true,
+        countryCode: true,
+        licenseType: true,
+        regulator: true,
+        businessStatus: true,
+        askingPriceEur: true,
+        employeeCount: true,
+        highlights: true,
+        seller: { select: { id: true, name: true, organization: true, status: true } },
+      },
+    }),
+    profile,
+  ]);
+  if (!asset || (principal.role !== 'PLATFORM_MANAGER' && asset.seller.status !== 'ACTIVE'))
+    return null;
+  return { ...asset, match: buyerProfile ? calculateMatch(buyerProfile, asset) : undefined };
 }
 
 export async function listOwnAssets(principal: Principal) {
@@ -172,51 +176,54 @@ export async function listBuyers(
   params: { q?: string; country?: string; selectedAssetId?: string } = {},
 ) {
   const q = params.q?.trim() ?? '';
-  const buyers = await prisma.user.findMany({
-    where: {
-      workspaceId: principal.workspaceId,
-      role: 'BUYER',
-      status: 'ACTIVE',
-      ...(params.country ? { countryCode: params.country.toUpperCase() } : {}),
-      ...(q
-        ? {
-            OR: [
-              { name: { contains: q, mode: 'insensitive' } },
-              { organization: { contains: q, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
-    },
-    orderBy: { organization: 'asc' },
-    take: 50,
-    select: {
-      id: true,
-      name: true,
-      organization: true,
-      countryCode: true,
-      profileSummary: true,
-      buyerProfile: { select: buyerProfileSelect },
-    },
-  });
-  let selectedAsset = null;
-  if (params.selectedAssetId)
-    selectedAsset = await prisma.asset.findFirst({
+  const selectedAsset = params.selectedAssetId
+    ? prisma.asset.findFirst({
+        where: {
+          id: params.selectedAssetId,
+          workspaceId: principal.workspaceId,
+          sellerId: principal.userId,
+        },
+        select: {
+          id: true,
+          title: true,
+          askingPriceEur: true,
+          countryCode: true,
+          category: true,
+          licenseType: true,
+          businessStatus: true,
+          employeeCount: true,
+        },
+      })
+    : Promise.resolve(null);
+  const [buyers, matchingAsset] = await Promise.all([
+    prisma.user.findMany({
       where: {
-        id: params.selectedAssetId,
         workspaceId: principal.workspaceId,
-        sellerId: principal.userId,
+        role: 'BUYER',
+        status: 'ACTIVE',
+        ...(params.country ? { countryCode: params.country.toUpperCase() } : {}),
+        ...(q
+          ? {
+              OR: [
+                { name: { contains: q, mode: 'insensitive' } },
+                { organization: { contains: q, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
       },
+      orderBy: { organization: 'asc' },
+      take: 50,
       select: {
         id: true,
-        title: true,
-        askingPriceEur: true,
+        name: true,
+        organization: true,
         countryCode: true,
-        category: true,
-        licenseType: true,
-        businessStatus: true,
-        employeeCount: true,
+        profileSummary: true,
+        buyerProfile: { select: buyerProfileSelect },
       },
-    });
+    }),
+    selectedAsset,
+  ]);
   return {
     buyers: buyers.map((buyer) => ({
       id: buyer.id,
@@ -225,11 +232,11 @@ export async function listBuyers(
       countryCode: buyer.countryCode,
       thesis: buyer.buyerProfile?.investmentThesis ?? buyer.profileSummary,
       match:
-        selectedAsset && buyer.buyerProfile
-          ? calculateMatch(buyer.buyerProfile, selectedAsset)
+        matchingAsset && buyer.buyerProfile
+          ? calculateMatch(buyer.buyerProfile, matchingAsset)
           : undefined,
     })),
-    selectedAsset,
+    selectedAsset: matchingAsset,
   };
 }
 

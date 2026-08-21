@@ -71,6 +71,40 @@ describe('UrlFilterForm', () => {
     });
   });
 
+  it('keeps a selected option in sync when the URL response updates the server default', async () => {
+    vi.useFakeTimers();
+    navigation.search = '';
+    const view = render(
+      <UrlFilterForm>
+        <select aria-label="Asset context" defaultValue="asset-a" name="asset">
+          <option value="asset-a">Asset A</option>
+          <option value="asset-b">Asset B</option>
+        </select>
+      </UrlFilterForm>,
+    );
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Asset context' }), {
+      target: { value: 'asset-b' },
+    });
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    expect(navigation.push).toHaveBeenCalledWith('/manager/assets?asset=asset-b', {
+      scroll: false,
+    });
+
+    navigation.search = 'asset=asset-b';
+    view.rerender(
+      <UrlFilterForm>
+        <select aria-label="Asset context" defaultValue="asset-b" name="asset">
+          <option value="asset-a">Asset A</option>
+          <option value="asset-b">Asset B</option>
+        </select>
+      </UrlFilterForm>,
+    );
+    await act(() => vi.runOnlyPendingTimersAsync());
+
+    expect(screen.getByRole('combobox', { name: 'Asset context' })).toHaveValue('asset-b');
+  });
+
   it('preserves edits made immediately after the form first mounts', async () => {
     render(
       <UrlFilterForm>
