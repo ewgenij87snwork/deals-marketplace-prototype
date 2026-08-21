@@ -5,7 +5,7 @@ export default defineConfig({
   timeout: 45_000,
   expect: { timeout: 15_000 },
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 1 : 2,
+  workers: 2,
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3102',
     trace: 'retain-on-failure',

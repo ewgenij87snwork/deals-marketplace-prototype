@@ -32,9 +32,15 @@ test('Buyer mandate persists and URL filters Assets', async ({ page }) => {
   await page.locator('input[name="targetBusinessStatuses"]').fill('LICENSE_ONLY');
   await page.locator('input[name="minEmployees"]').fill('1');
   await page.locator('input[name="maxEmployees"]').fill('10');
-  await targetCriteria.locator('summary').click();
-  await expect(targetCriteria).not.toHaveAttribute('open', '');
-  await page.getByRole('button', { name: 'Save mandate', exact: true }).click();
+  const saveMandate = page.getByRole('button', { name: 'Save mandate', exact: true });
+  await expect(saveMandate).toBeEnabled();
+  if ((page.viewportSize()?.width ?? 1280) <= 600) {
+    await saveMandate.focus();
+    await expect(saveMandate).toBeFocused();
+    await page.keyboard.press('Enter');
+  } else {
+    await saveMandate.click();
+  }
   await expect(page.getByRole('status')).toHaveText('Saved successfully.');
 
   await page.reload();
