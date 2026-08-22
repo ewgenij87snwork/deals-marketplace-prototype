@@ -9,7 +9,9 @@
 
 **[Open the live prototype →](https://n5deal-marketplace-prototype-six.vercel.app)**
 
-![N5Deal marketplace flow](assets/readme/marketplace-storyboard.svg)
+![Deals Marketplace buyer flow: role selection, EMI filtering, explainable match, and persisted inquiry](assets/readme/deals-marketplace-demo.gif)
+
+*A real Buyer flow from the deployed fictional reviewer workspace: 20 assets → 2 EMI results → an explainable match → a persisted inquiry.*
 
 Built first for a time-limited technical review; kept as a compact engineering portfolio case study. The fastest path is: open the demo, follow the tour, then inspect the architecture and source behind each decision.
 
