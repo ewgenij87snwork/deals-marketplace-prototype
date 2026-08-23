@@ -52,6 +52,8 @@ test('a participant suspended during an active session cannot keep using the das
     .getByRole('dialog', { name: 'Suspend participant' })
     .getByRole('button', { name: 'Confirm Suspend' })
     .click();
+  await expect(page.getByRole('status')).toHaveText('Saved successfully.');
+  await page.goto('/manager/participants?role=SELLER');
   await expect(sellerRow).toContainText('SUSPENDED');
 
   await page.context().addCookies([sellerCookie!]);

@@ -40,13 +40,12 @@ test('Seller publishes an Asset and uses it for Buyer matching and contact', asy
   await page.getByRole('link', { name: 'Find Buyers', exact: true }).click();
   await expect(page).toHaveURL(/\/seller\/buyers$/);
   await page.locator('select[name="asset"]').selectOption({ label: title });
-  await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
   await expect(page).toHaveURL(/asset=/);
   await expect(page.locator('select[name="asset"] option:checked')).toHaveText(title);
-  await expect(page.getByText('Smart Match', { exact: false })).toHaveCount(3);
+  await expect(page.locator('article.market-card .match')).toHaveCount(20);
 
   const firstBuyer = page.locator('article.market-card').first();
-  await firstBuyer.locator('summary').click();
+  await firstBuyer.getByRole('button', { name: 'Contact Buyer', exact: true }).click();
   const subject = 'Seller contextual inquiry';
   await firstBuyer.locator('input[name="subject"]').fill(subject);
   await firstBuyer.getByRole('button', { name: 'Send inquiry', exact: true }).click();
@@ -64,8 +63,7 @@ test('Seller contact disclosure exposes the whole padded row as a click target',
   await page.getByRole('link', { name: 'Find Buyers', exact: true }).click();
 
   const card = page.locator('article.market-card').first();
-  const details = card.locator('details');
-  const summary = details.locator('summary');
+  const summary = card.getByRole('button', { name: 'Contact Buyer', exact: true });
   const box = await summary.boundingBox();
   expect(box).not.toBeNull();
   expect(box!.height).toBeGreaterThanOrEqual(44);
@@ -73,7 +71,7 @@ test('Seller contact disclosure exposes the whole padded row as a click target',
 
   await summary.click({ position: { x: box!.width - 8, y: box!.height / 2 } });
 
-  await expect(details).toHaveAttribute('open', '');
+  await expect(summary).toHaveAttribute('aria-expanded', 'true');
 });
 
 test('Seller Asset context stays selected after live matching results arrive', async ({ page }) => {
@@ -87,7 +85,7 @@ test('Seller Asset context stays selected after live matching results arrive', a
   await asset.selectOption({ label: target });
 
   await expect(page).toHaveURL(/asset=/);
-  await expect(page.getByText(`Matching Buyers against ${target}.`, { exact: true })).toBeVisible();
+  await expect(page.locator('.match-context')).toContainText(`Matching Buyers against ${target}.`);
   await expect(asset.locator('option:checked')).toHaveText(target);
 });
 
@@ -116,15 +114,15 @@ test('Seller Buyer contacts behave as a single-open accordion', async ({ page })
   await page.getByRole('link', { name: 'Find Buyers', exact: true }).click();
 
   const cards = page.locator('article.market-card');
-  const firstDetails = cards.nth(0).locator('details');
-  const secondDetails = cards.nth(1).locator('details');
+  const firstDetails = cards.nth(0).getByRole('button', { name: 'Contact Buyer', exact: true });
+  const secondDetails = cards.nth(1).getByRole('button', { name: 'Contact Buyer', exact: true });
 
-  await firstDetails.locator('summary').click();
-  await expect(firstDetails).toHaveAttribute('open', '');
-  await secondDetails.locator('summary').click();
+  await firstDetails.click();
+  await expect(firstDetails).toHaveAttribute('aria-expanded', 'true');
+  await secondDetails.click();
 
-  await expect(firstDetails).not.toHaveAttribute('open', '');
-  await expect(secondDetails).toHaveAttribute('open', '');
+  await expect(firstDetails).toHaveAttribute('aria-expanded', 'false');
+  await expect(secondDetails).toHaveAttribute('aria-expanded', 'true');
 });
 
 test('opening one Buyer contact keeps closed cards compact', async ({ page }) => {
@@ -134,7 +132,7 @@ test('opening one Buyer contact keeps closed cards compact', async ({ page }) =>
   const cards = page.locator('article.market-card');
   const closedCard = cards.nth(0);
   const openCard = cards.nth(1);
-  await openCard.locator('summary').click();
+  await openCard.getByRole('button', { name: 'Contact Buyer', exact: true }).click();
 
   const closedHeight = await closedCard.evaluate(
     (element) => element.getBoundingClientRect().height,
@@ -146,9 +144,11 @@ test('opening one Buyer contact keeps closed cards compact', async ({ page }) =>
 test("Seller cannot inspect another Seller's Asset by guessed URL", async ({ page }) => {
   await choosePersona(page, 'Buyer');
   await page.getByRole('link', { name: 'Marketplace', exact: true }).click();
+  await page.goto('/buyer/assets?q=Lithuanian%20EMI%20Licence');
   const foreignCard = page
     .locator('article.market-card')
     .filter({ hasText: 'Lithuanian EMI Licence' });
+  await expect(foreignCard).toBeVisible();
   const foreignAssetUrl = await foreignCard
     .getByRole('link', { name: /Inspect opportunity/i })
     .getAttribute('href');
