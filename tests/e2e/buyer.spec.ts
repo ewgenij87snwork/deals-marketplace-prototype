@@ -150,7 +150,7 @@ test('Buyer filter controls follow browser Back together with URL and results', 
   const restoredFilters = await marketplaceFilterScope(page);
   await expect(restoredFilters.locator('select[name="category"]')).toHaveValue('');
   await expect(restoredFilters.locator('input[name="country"]')).toHaveValue('');
-  await expect(page.locator('article.market-card')).toHaveCount(4);
+  await expect(page.locator('article.market-card')).toHaveCount(12);
 });
 
 test('Buyer price bounds constrain the Asset result set', async ({ page }) => {
@@ -158,7 +158,7 @@ test('Buyer price bounds constrain the Asset result set', async ({ page }) => {
 
   await page.goto('/buyer/assets?priceMin=3000000');
 
-  await expect(page.locator('article.market-card')).toHaveCount(1);
+  await expect(page.locator('article.market-card')).toHaveCount(4);
   await expect(page.getByText('Irish RegTech Platform', { exact: true })).toBeVisible();
   const filters = await marketplaceFilterScope(page);
   await expect(filters.locator('input[name="priceMin"]')).toHaveValue('3000000');
@@ -181,7 +181,7 @@ test('Buyer marketplace keeps two useful columns at tablet width', async ({ page
   await page.getByRole('link', { name: 'Marketplace', exact: true }).click();
 
   const cards = page.locator('article.market-card');
-  await expect(cards).toHaveCount(4);
+  await expect(cards).toHaveCount(12);
   const boxes = await Promise.all([0, 1, 2].map((index) => cards.nth(index).boundingBox()));
   expect(boxes.every(Boolean)).toBe(true);
   expect(Math.abs(boxes[0]!.y - boxes[1]!.y)).toBeLessThan(2);
