@@ -2,12 +2,12 @@
 
 > A focused M&A marketplace prototype for discovering fit between acquisition mandates and assets — with explainable matching, persisted inquiries, and a manager moderation loop.
 
-[![Live demo](https://img.shields.io/badge/Live_demo-open-0f62fe?style=flat-square)](https://n5deal-marketplace-prototype-six.vercel.app)
-[![Health](https://img.shields.io/badge/API-health-22a06b?style=flat-square)](https://n5deal-marketplace-prototype-six.vercel.app/api/health)
+[![Live demo](https://img.shields.io/badge/Live_demo-open-0f62fe?style=flat-square)](https://deals-marketplace-prototype.vercel.app)
+[![Health](https://img.shields.io/badge/API-health-22a06b?style=flat-square)](https://deals-marketplace-prototype.vercel.app/api/health)
 [![Next.js](https://img.shields.io/badge/Next.js-16-111827?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-**[Open the live prototype →](https://n5deal-marketplace-prototype-six.vercel.app)**
+**[Open the live prototype →](https://deals-marketplace-prototype.vercel.app)**
 
 ![Deals Marketplace buyer flow: role selection, EMI filtering, explainable match, and persisted inquiry](assets/readme/deals-marketplace-demo.gif)
 
