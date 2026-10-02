@@ -9,6 +9,8 @@
 
 **[Open the live prototype →](https://deals-marketplace-prototype.vercel.app)**
 
+**[Watch the product demo on YouTube →](https://www.youtube.com/watch?v=g0Mr5PWv964)**
+
 ![Deals Marketplace buyer flow: role selection, EMI filtering, explainable match, and persisted inquiry](assets/readme/deals-marketplace-demo.gif)
 
 _A real Buyer flow from the deployed fictional reviewer workspace: 20 assets → 2 EMI results → an explainable match → a persisted inquiry._
