@@ -1,6 +1,6 @@
 # Deals Marketplace Prototype
 
-> A focused M&A marketplace prototype for discovering fit between acquisition mandates and assets — with explainable matching, persisted inquiries, and a manager moderation loop.
+> A focused M&A marketplace prototype for discovering fit between acquisition mandates and assets, with explainable matching, persisted inquiries, and a manager moderation loop.
 
 [![Live demo](https://img.shields.io/badge/Live_demo-open-0f62fe?style=flat-square)](https://deals-marketplace-prototype.vercel.app)
 [![Health](https://img.shields.io/badge/API-health-22a06b?style=flat-square)](https://deals-marketplace-prototype.vercel.app/api/health)
