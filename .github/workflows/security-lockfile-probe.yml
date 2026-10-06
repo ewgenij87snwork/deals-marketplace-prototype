@@ -1,0 +1,29 @@
+name: Security lockfile probe
+
+on:
+  push:
+    branches:
+      - fix/deals-security-audit
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Install pnpm
+        run: npm install --global pnpm@11.17.0
+      - name: Regenerate lockfile
+        run: pnpm install --lockfile-only
+      - name: Production audit
+        run: pnpm audit --prod
+      - name: Emit generated lockfile
+        if: always()
+        shell: bash
+        run: |
+          printf '%s\n' 'LOCKFILE_GZIP_BASE64_BEGIN'
+          gzip -c pnpm-lock.yaml | base64 -w 0 | fold -w 60000
+          printf '\n%s\n' 'LOCKFILE_GZIP_BASE64_END'
