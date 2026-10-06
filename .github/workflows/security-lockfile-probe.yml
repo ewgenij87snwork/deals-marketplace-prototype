@@ -17,7 +17,7 @@ jobs:
       - name: Install pnpm
         run: npm install --global pnpm@11.17.0
       - name: Regenerate lockfile
-        run: pnpm update --lockfile-only --depth 100
+        run: pnpm install --lockfile-only
       - name: Production audit
         run: pnpm audit --prod
       - name: Emit generated lockfile
