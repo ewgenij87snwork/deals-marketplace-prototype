@@ -25,7 +25,7 @@
     "check:toolchain": "node scripts/check-toolchain.mjs",
     "check:project": "node scripts/check-project.mjs",
     "verify:wave": "node scripts/check-toolchain.mjs && node scripts/check-project.mjs && eslint . --max-warnings=0 && tsc --noEmit && vitest run && prisma generate && next build && git diff --check",
-    "verify": "node scripts/check-toolchain.mjs && node scripts/check-project.mjs && eslint . --max-warnings=0 && prettier --check . && tsc --noEmit && vitest run && prisma generate && next build && git diff --check"
+    "verify": "node --test scripts/cloudflare-keepalive.test.mjs && node scripts/check-toolchain.mjs && node scripts/check-project.mjs && eslint . --max-warnings=0 && prettier --check . && tsc --noEmit && vitest run && prisma generate && next build && git diff --check"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.0",
