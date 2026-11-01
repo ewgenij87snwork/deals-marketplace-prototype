@@ -37,14 +37,14 @@
     "dotenv": "^17.4.2",
     "lucide-react": "^0.540.0",
     "motion": "^12.23.0",
-    "next": "16.3.8",
+    "next": "16.4.3",
     "pg": "^8.16.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "^7.62.0",
     "server-only": "^0.0.1",
     "tailwind-merge": "^3.3.0",
-    "zod": "^4.1.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
@@ -57,7 +57,7 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "eslint": "^9.0.0",
-    "eslint-config-next": "16.3.8",
+    "eslint-config-next": "16.4.3",
     "jsdom": "^26.1.0",
     "prettier": "^3.6.0",
     "prisma": "7.9.1",
