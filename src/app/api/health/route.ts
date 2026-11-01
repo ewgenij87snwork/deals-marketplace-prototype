@@ -7,7 +7,8 @@ export async function GET() {
   const env = getServerEnv();
   try {
     const { prisma } = await import('@/server/db/prisma');
-    await prisma.$queryRaw`SELECT 1`;
+    // Exercise an application table as well as the database connection.
+    await prisma.asset.findFirst({ select: { id: true } });
     return NextResponse.json(
       {
         status: 'ok',
